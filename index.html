@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Message Board</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        #messages { border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; margin-bottom: 10px; }
+        .msg { margin-bottom: 8px; padding: 5px; background: #f4f4f4; border-radius: 4px; }
+        input, button { padding: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Public Board</h2>
+    <div id="messages">Loading messages...</div>
+
+    <input type="text" id="username" placeholder="Your name">
+    <input type="text" id="content" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        // REPLACE THESE with your actual Supabase credentials
+        const SUPABASE_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co';
+        const SUPABASE_KEY = 'iatkqxybgldhxzgqrbxq';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Fetch messages on load
+        async function getMessages() {
+            const { data, error } = await supabase
+                .from('messages')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) console.error(error);
+            else renderMessages(data);
+        }
+
+        function renderMessages(data) {
+            const container = document.getElementById('messages');
+            container.innerHTML = data.map(m => `
+                <div class="msg"><strong>${m.username}:</strong> ${m.content}</div>
+            `).join('');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const username = document.getElementById('username').value;
+            const content = document.getElementById('content').value;
+
+            if (!username || !content) return alert("Fill in both fields!");
+
+            const { error } = await supabase
+                .from('messages')
+                .insert([{ username, content }]);
+
+            if (error) alert("Error sending!");
+            else {
+                document.getElementById('content').value = '';
+                getMessages(); // Refresh list
+            }
+        }
+
+        // Poll for new messages every 3 seconds
+        setInterval(getMessages, 3000);
+        getMessages();
+    </script>
+</body>
+</html>
