@@ -53,9 +53,8 @@
 </head>
 <body>
 
-    <button onclick="document.body.classList.toggle('dark-mode')" 
-        style="width: auto; padding: 10px; cursor: pointer; border-radius: 50px;">
-    🌓 Toggle Night Mode
+    <button onclick="window.toggleNightMode()" style="width: auto;">
+    🌙 Toggle Night Mode
 </button>
     <h2>Secret Message Board</h2>
     <div id="messages">Connecting to database...</div>
@@ -80,6 +79,18 @@
         for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
         return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
     }
+
+      window.toggleNightMode = function() {
+    // 1. Flip the class on the body
+    const isDark = document.body.classList.toggle('dark-mode');
+    
+    // 2. Save the choice to the "digital notebook"
+    if (isDark) {
+        localStorage.setItem('theme', 'dark');
+    } else {
+        localStorage.setItem('theme', 'light');
+    }
+};
 
     // --- 1. THE SEND FUNCTION ---
     window.handleSend = async function() {
