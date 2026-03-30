@@ -269,6 +269,20 @@ input[type="text"]:focus {
 </head>
 
 <body>
+    <div class="header-area">
+        <h1>Secret Message Board</h1>
+        <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
+    </div>
+
+    <div id="messages"></div>
+
+    <div class="footer-area">
+        <input type="text" id="content" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
+        <button class="btn-send" onclick="window.handleSend()">Send ✈️</button>
+    </div>
+
+    <button class="btn-night" onclick="window.toggleNightMode()">🌙</button>
+
     
     <button onclick="window.toggleNightMode()" style="width: auto;">
     🌙 Toggle Night Mode
