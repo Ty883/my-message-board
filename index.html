@@ -237,19 +237,6 @@ input[type="text"]:focus {
 </head>
 
 <body>
-
-    <button class="btn-night" onclick="window.toggleNightMode()">
-    🌙 Night Mode
-</button>
-
-<div class="input-area">
-    <input type="text" id="username" placeholder="Name" oninput="window.saveName(this.value)">
-    <input type="text" id="content" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
-    
-    <button class="btn-send" onclick="window.handleSend()">
-        <span>Send</span> ✈️
-    </button>
-</div>
     
     <button onclick="window.toggleNightMode()" style="width: auto;">
     🌙 Toggle Night Mode
