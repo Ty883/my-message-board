@@ -24,12 +24,6 @@ function initSupabase() {
         setTimeout(initSupabase, 1000); // Try again in 1 second
     }
 }
-  
-    
-    // Check if the library loaded correctly
-    if (!window.supabase) {
-        console.error("Supabase library failed to load from CDN!");
-    }
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
