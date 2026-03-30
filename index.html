@@ -157,8 +157,12 @@ input[type="text"]:focus {
     // --- 3. THE RENDER LOGIC ---
     async function fetchData() {
         if (!client) return;
-        const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-        if (error) return;
+        // This tells Supabase: "Give me Pinned ones first, then sort the rest by time"
+const { data, error } = await client
+    .from('messages')
+    .select('*')
+    .order('is_pinned', { ascending: false }) 
+    .order('created_at', { ascending: true });
 
         const currentUser = document.getElementById('username').value;
         const container = document.getElementById('messages');
