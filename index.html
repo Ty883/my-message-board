@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta charset="UTF-8">
     <title>Message Board</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -208,7 +209,7 @@ body.dark-mode .btn-night {
 }
         
 .input-area {
-    position: sticky;
+    position: fixed;
     bottom: 0;
     background: var(--bg);
     padding: 20px;
@@ -232,6 +233,44 @@ input[type="text"]:focus {
         
     input { padding: 8px; margin-right: 5px; }
 
+@media (max-width: 600px) {
+    /* 1. Make the message board take up more space */
+    #messages {
+        width: 100%;
+        padding: 10px;
+        margin-top: 70px; /* Space for the floating toggle */
+    }
+
+    /* 2. Stack the input area vertically or make it tighter */
+    .input-area {
+        padding: 10px;
+        flex-wrap: wrap; /* Allows items to jump to a new line if needed */
+        gap: 5px;
+    }
+
+    /* 3. Hide the Username input to save space (since it's saved anyway!) */
+    #username {
+        display: none; 
+    }
+
+    /* 4. Make the message input and send button look like a mobile dock */
+    #content {
+        flex-grow: 1;
+        font-size: 16px; /* Prevents iOS from zooming in when you tap the box */
+        border-radius: 20px;
+    }
+
+    .btn-send {
+        padding: 10px 15px;
+    }
+
+    /* 5. Adjust the message bubbles to be wider on small screens */
+    .msg {
+        max-width: 85%;
+        font-size: 0.95rem;
+    }
+}
+        
     </style>
     
 </head>
