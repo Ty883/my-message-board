@@ -353,14 +353,7 @@ input[type="text"]:focus {
     <button onclick="window.toggleNightMode()" style="width: auto;">
     🌙 Toggle Night Mode
 </button>
-    <h2>Secret Message Board</h2>
-    <div id="messages">Connecting to database...</div>
-
-    <input type="text" id="username" placeholder="Name" oninput="window.saveName(this.value)">
-    <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
-
-<button onclick="window.handleSend()">Send</button>
-
+    
     
 <script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
