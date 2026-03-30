@@ -61,10 +61,15 @@
     <div id="messages">Connecting to database...</div>
 
     <input type="text" id="username" placeholder="Your Name" 
-       oninput="localStorage.setItem('savedName', this.value); fetchData();">
-    <input type="text" id="content" placeholder="Type a message...">
-    <button onclick="window.handleSend()">Post Message</button>
+       oninput="localStorage.setItem('savedName', this.value); fetchData();" 
+       style="width: 20%; margin-bottom: 10px;">
 
+<input type="text" id="content" placeholder="Type a message..." 
+       onkeypress="if(event.key === 'Enter') window.handleSend()" 
+       style="width: 60%;">
+
+<button onclick="window.handleSend()" style="width: 15%;">Send</button>
+    
   <script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
     const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
@@ -76,46 +81,55 @@
         return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
     }
 
-    // 1. ATTACH FUNCTIONS TO WINDOW IMMEDIATELY
+    // --- 1. THE SEND FUNCTION ---
     window.handleSend = async function() {
         const u = document.getElementById('username').value;
         const c = document.getElementById('content').value;
-        if (!u || !c) return alert("Fill both fields");
+        if (!u || !c) return alert("Please enter your name and a message!");
 
         const { error } = await client.from('messages').insert([{ username: u, content: c, likes: 0 }]);
-        if (error) alert(error.message);
-        else {
-            document.getElementById('content').value = '';
+        if (error) {
+            alert("Error sending: " + error.message);
+        } else {
+            document.getElementById('content').value = ''; // Clear message box
             fetchData();
         }
     };
 
+    // --- 2. THE LIKE FUNCTION ---
     window.addLike = async function(id, currentLikes) {
         const { error } = await client.from('messages').update({ likes: (currentLikes || 0) + 1 }).eq('id', id);
         if (error) console.error(error);
         else fetchData();
     };
 
-    // 2. FETCH DATA
+    // --- 3. THE RENDER FUNCTION ---
     async function fetchData() {
         if (!client) return;
         const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-        if (error) return;
+        if (error) return console.error(error);
 
+        const currentUser = document.getElementById('username').value;
         const container = document.getElementById('messages');
+        
         container.innerHTML = data.map(m => {
+            const isMe = m.username === currentUser && currentUser !== "";
+            const sideClass = isMe ? "me" : "them";
             const userColor = stringToColor(m.username || "Anon");
+            
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
-            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
+            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px; margin-top:5px;"/>` : m.content;
             
             return `
-                <div class="msg" style="border-left: 5px solid ${userColor}">
-                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-                        <strong style="color:${userColor}">${m.username}</strong>
-                    </div>
-                    <div style="margin: 5px 0;">${display}</div>
-                    <div class="like-container">
-                        <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
+                <div class="message-row ${sideClass}">
+                    <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
+                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px;">
+                            <strong style="color:${isMe ? 'white' : userColor}">${m.username}</strong>
+                        </div>
+                        <div style="word-wrap: break-word;">${display}</div>
+                        <div class="like-container">
+                            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -123,31 +137,23 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    // 3. STARTUP
-   async function init() {
-    // 1. Check if a name was saved previously
-    const savedName = localStorage.getItem('savedName');
-    if (savedName) {
-        document.getElementById('username').value = savedName;
-    }
+    // --- 4. THE STARTUP ---
+    async function init() {
+        // Load saved name from browser memory
+        const savedName = localStorage.getItem('savedName');
+        if (savedName) {
+            document.getElementById('username').value = savedName;
+        }
 
-    if (window.supabase) {
-        client = window.supabase.createClient(SB_URL, SB_KEY);
-        fetchData();
-        setInterval(fetchData, 3000);
-    } else {
-        setTimeout(init, 500);
-    }
-}
-        
         if (window.supabase) {
             client = window.supabase.createClient(SB_URL, SB_KEY);
             fetchData();
             setInterval(fetchData, 3000);
         } else {
-            setTimeout(init, 500);
+            setTimeout(init, 500); // Try again if Supabase hasn't loaded
         }
     }
+
     init();
 </script>
 </body>
