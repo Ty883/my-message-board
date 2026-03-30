@@ -15,6 +15,21 @@
     --msg-bg: #242526;
     --border: #3a3b3c;
 }
+        /* Target the text inside all messages when in Dark Mode */
+body.dark-mode .msg {
+    color: #ffffff !important;
+}
+
+/* Ensure the username (strong tag) is also bright enough */
+body.dark-mode .msg strong {
+    filter: brightness(1.5); /* Makes the name colors pop more on dark bg */
+}
+
+/* Make sure the 'Them' messages don't stay dark gray */
+body.dark-mode .message-row.them .msg {
+    background-color: #3a3b3c;
+    color: #ffffff;
+}
 
    body {
     font-family: 'Poppins', sans-serif;
