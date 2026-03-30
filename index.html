@@ -61,9 +61,35 @@ body.dark-mode .msg {
         border: 1px solid #ddd;
     }
 
+.input-area {
+    position: sticky;
+    bottom: 0;
+    background: var(--bg);
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+}
+
+input[type="text"] {
+    flex-grow: 1;
+    border-radius: 25px;
+    padding: 12px 20px;
+    border: 1px solid #ddd;
+    outline: none;
+}
+
+input[type="text"]:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+}
+        
     input { padding: 8px; margin-right: 5px; }
-</style>
+
+    </style>
+    
 </head>
+
 <body>
 
     <button onclick="window.toggleNightMode()" style="width: auto;">
