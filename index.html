@@ -130,20 +130,22 @@ input, textarea {
             const userColor = stringToColor(m.username || "Anon");
             const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-            return `
-                <div class="msg" style="border-left: 5px solid ${userColor}; background: white; padding: 12px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                        <strong style="color: ${userColor}; font-size: 1.1rem;">${m.username}</strong>
-                        <small style="color: #999;">${time}</small>
-                    </div>
-                    <div style="color: #333; line-height: 1.4;">${m.content}</div>
-                    <div style="margin-top: 8px;">
-                        <button onclick="window.addLike(${m.id}, ${m.likes || 0})" 
-                                style=""cursor: pointer; background: #eee; border: 1px solid #ccc; padding: 5px 10px; border-radius: 20px;">
-                            ❤️ ${m.likes || 0}
-                        </button>
-                    </div>
-                </div>
+            rreturn `
+    <div class="msg" style="border-left: 5px solid ${userColor};">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: ${userColor};">${m.username}</strong>
+            <small style="color: #999;">${time}</small>
+        </div>
+        
+        <div style="margin-top: 5px;">${contentDisplay}</div>
+
+        <div class="like-container">
+            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">
+                ❤️ ${m.likes || 0}
+            </button>
+        </div>
+    </div>
+`;
             `;
         }).join('');
         
