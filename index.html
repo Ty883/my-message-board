@@ -150,6 +150,26 @@
 
     // --- 4. THE STARTUP ---
     async function init() {
+    
+    // --- NEW: Load saved theme ---
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+    }
+
+    // --- Existing: Load saved name ---
+    const savedName = localStorage.getItem('savedName');
+    if (savedName) {
+        document.getElementById('username').value = savedName;
+    }
+
+    // ... rest of your init code (Supabase setup)
+    if (window.supabase) {
+        client = window.supabase.createClient(SB_URL, SB_KEY);
+        fetchData();
+        setInterval(fetchData, 3000);
+    }
+}
         // Load saved name from browser memory
         const savedName = localStorage.getItem('savedName');
         if (savedName) {
