@@ -24,13 +24,20 @@
         margin-bottom: 20px; 
     }
 
-    .msg { 
-        background-color: var(--msg-bg); 
-        padding: 12px; 
-        margin-bottom: 10px; 
-        border-radius: 8px; 
-        display: flex; 
-        flex-direction: column; 
+   .msg {
+    background: rgba(255, 255, 255, 0.7); /* White with 70% transparency */
+    backdrop-filter: blur(10px); /* The "Frosted" effect */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    padding: 15px;
+    border-radius: 16px; /* Extra rounded corners */
+}
+
+/* Dark mode version */
+body.dark-mode .msg {
+    background: rgba(36, 37, 38, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
     }
 
     .like-container { 
