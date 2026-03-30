@@ -60,6 +60,46 @@
 
     // 4. Load messages
     async function fetchData() {
+        // Helper to give each user a unique color based on their name
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return `hsl(${Math.abs(hash) % 360}, 70%, 40%)`;
+}
+
+async function fetchData() {
+    const { data, error } = await client
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+    if (error) return console.error(error);
+    
+    const container = document.getElementById('messages');
+    
+    container.innerHTML = data.map(m => {
+        // Create a pretty timestamp (e.g., 4:30 PM)
+        const time = m.created_at 
+            ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+            : '--:--';
+            
+        const userColor = stringToColor(m.username || "Anon");
+
+        return `
+            <div class="msg" style="border-left: 4px solid ${userColor}; padding-left: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <strong style="color: ${userColor};">${m.username}</strong>
+                    <small style="color: #aaa; font-size: 0.75rem;">${time}</small>
+                </div>
+                <div style="margin-top: 4px; color: #333;">${m.content}</div>
+            </div>
+        `;
+    }).join('');
+    
+    container.scrollTop = container.scrollHeight;
+}
         const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
         if (error) return console.error(error);
         
