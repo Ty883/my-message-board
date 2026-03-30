@@ -69,75 +69,70 @@
 
 <button onclick="window.handleSend()" style="width: 15%;">Send</button>
     
-  <script>
+<script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
     const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
     let client;
 
+    // --- 1. HELPERS & SAVERS ---
     function stringToColor(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
         return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
     }
 
-      window.toggleNightMode = function() {
-    // 1. Flip the class on the body
-    const isDark = document.body.classList.toggle('dark-mode');
-    
-    // 2. Save the choice to the "digital notebook"
-    if (isDark) {
-        localStorage.setItem('theme', 'dark');
-    } else {
-        localStorage.setItem('theme', 'light');
-    }
-};
+    window.toggleNightMode = function() {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    };
 
-    // --- 1. THE SEND FUNCTION ---
+    window.saveName = function(name) {
+        localStorage.setItem('savedName', name);
+        fetchData(); // Refresh to update "Me vs Them" alignment instantly
+    };
+
+    // --- 2. THE SEND & LIKE LOGIC ---
     window.handleSend = async function() {
         const u = document.getElementById('username').value;
         const c = document.getElementById('content').value;
-        if (!u || !c) return alert("Please enter your name and a message!");
+        if (!u || !c) return alert("Enter your name and a message!");
 
         const { error } = await client.from('messages').insert([{ username: u, content: c, likes: 0 }]);
         if (error) {
-            alert("Error sending: " + error.message);
+            alert("Error: " + error.message);
         } else {
-            document.getElementById('content').value = ''; // Clear message box
+            document.getElementById('content').value = '';
             fetchData();
         }
     };
 
-    // --- 2. THE LIKE FUNCTION ---
     window.addLike = async function(id, currentLikes) {
-        const { error } = await client.from('messages').update({ likes: (currentLikes || 0) + 1 }).eq('id', id);
-        if (error) console.error(error);
-        else fetchData();
+        await client.from('messages').update({ likes: (currentLikes || 0) + 1 }).eq('id', id);
+        fetchData();
     };
 
-    // --- 3. THE RENDER FUNCTION ---
+    // --- 3. THE RENDER LOGIC ---
     async function fetchData() {
         if (!client) return;
         const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-        if (error) return console.error(error);
+        if (error) return;
 
         const currentUser = document.getElementById('username').value;
         const container = document.getElementById('messages');
         
         container.innerHTML = data.map(m => {
             const isMe = m.username === currentUser && currentUser !== "";
-            const sideClass = isMe ? "me" : "them";
             const userColor = stringToColor(m.username || "Anon");
-            
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
-            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px; margin-top:5px;"/>` : m.content;
+            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
             
             return `
-                <div class="message-row ${sideClass}">
+                <div class="message-row ${isMe ? 'me' : 'them'}">
                     <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
-                        <div style="display:flex; justify-content:space-between; font-size:0.75rem; margin-bottom:4px;">
+                        <div style="font-size:0.75rem; margin-bottom:4px;">
                             <strong style="color:${isMe ? 'white' : userColor}">${m.username}</strong>
                         </div>
-                        <div style="word-wrap: break-word;">${display}</div>
+                        <div>${display}</div>
                         <div class="like-container">
                             <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
                         </div>
@@ -148,43 +143,23 @@
         container.scrollTop = container.scrollHeight;
     }
 
-    // --- 4. THE STARTUP ---
+    // --- 4. STARTUP ---
     async function init() {
-    
-    // --- NEW: Load saved theme ---
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
-
-    // --- Existing: Load saved name ---
-    const savedName = localStorage.getItem('savedName');
-    if (savedName) {
-        document.getElementById('username').value = savedName;
-    }
-
-    // ... rest of your init code (Supabase setup)
-    if (window.supabase) {
-        client = window.supabase.createClient(SB_URL, SB_KEY);
-        fetchData();
-        setInterval(fetchData, 3000);
-    }
-}
-        // Load saved name from browser memory
-        const savedName = localStorage.getItem('savedName');
-        if (savedName) {
-            document.getElementById('username').value = savedName;
-        }
+        // Load Theme
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        
+        // Load Name
+        const saved = localStorage.getItem('savedName');
+        if (saved) document.getElementById('username').value = saved;
 
         if (window.supabase) {
             client = window.supabase.createClient(SB_URL, SB_KEY);
             fetchData();
             setInterval(fetchData, 3000);
         } else {
-            setTimeout(init, 500); // Try again if Supabase hasn't loaded
+            setTimeout(init, 500);
         }
     }
-
     init();
 </script>
 </body>
