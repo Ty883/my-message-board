@@ -128,7 +128,7 @@ input[type="text"]:focus {
     const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
     let client;
 
-    // --- 1. HELPERS & SAVERS ---
+    // --- 1. HELPERS ---
     function stringToColor(str) {
         let hash = 0;
         for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
@@ -142,18 +142,23 @@ input[type="text"]:focus {
 
     window.saveName = function(name) {
         localStorage.setItem('savedName', name);
-        fetchData(); // Refresh to update "Me vs Them" alignment instantly
+        fetchData();
     };
 
-    // --- 2. THE SEND & LIKE LOGIC ---
+    // --- 2. THE SEND LOGIC (Fixed) ---
     window.handleSend = async function() {
         const u = document.getElementById('username').value;
         const c = document.getElementById('content').value;
-        if (!u || !c) return alert("Enter your name and a message!");
+        if (!u || !c) return alert("Fill in your name and message!");
 
-        const { error } = await client.from('messages').insert([{ username: u, content: c, likes: 0 }]);
+        // We explicitly set is_pinned to false for new messages
+        const { error } = await client.from('messages').insert([
+            { username: u, content: c, likes: 0, is_pinned: false }
+        ]);
+
         if (error) {
-            alert("Error: " + error.message);
+            console.error("Send Error:", error);
+            alert("Could not send: " + error.message);
         } else {
             document.getElementById('content').value = '';
             fetchData();
@@ -165,49 +170,54 @@ input[type="text"]:focus {
         fetchData();
     };
 
-    // --- 3. THE RENDER LOGIC ---
+    // --- 3. THE RENDER LOGIC (With Pinning) ---
     async function fetchData() {
         if (!client) return;
-        // This tells Supabase: "Give me Pinned ones first, then sort the rest by time"
-const { data, error } = await client
-    .from('messages')
-    .select('*')
-    .order('is_pinned', { ascending: false }) 
-    .order('created_at', { ascending: true });
+        
+        // Correctly ordering: Pins first, then newest at bottom
+        const { data, error } = await client
+            .from('messages')
+            .select('*')
+            .order('is_pinned', { ascending: false }) 
+            .order('created_at', { ascending: true });
+
+        if (error) return console.error("Fetch Error:", error);
 
         const currentUser = document.getElementById('username').value;
         const container = document.getElementById('messages');
         
         container.innerHTML = data.map(m => {
             const isMe = m.username === currentUser && currentUser !== "";
+            const isPinned = m.is_pinned === true;
             const userColor = stringToColor(m.username || "Anon");
+            
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
             const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
-            container.innerHTML = data.map(m => {
-    const isMe = m.username === currentUser && currentUser !== "";
-    const isPinned = m.is_pinned === true; // Check if it's pinned
-    
-    return `
-        <div class="message-row ${isMe ? 'me' : 'them'} ${isPinned ? 'pinned-msg' : ''}">
-            <div class="msg" style="border-left: 5px solid ${stringToColor(m.username)}">
-                ${isPinned ? '<small style="color:gold;">📌 PINNED ANNOUNCEMENT</small>' : ''}
-                <div style="font-size:0.75rem;">
-                    <strong>${m.username}</strong>
+            
+            return `
+                <div class="message-row ${isMe ? 'me' : 'them'} ${isPinned ? 'pinned-msg' : ''}">
+                    <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
+                        ${isPinned ? '<div style="font-size:0.6rem; color:#d4af37; font-weight:bold;">📌 PINNED</div>' : ''}
+                        <div style="font-size:0.75rem; margin-bottom:4px;">
+                            <strong style="color:${isMe ? 'white' : userColor}">${m.username}</strong>
+                        </div>
+                        <div>${display}</div>
+                        <div class="like-container">
+                            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
+                        </div>
+                    </div>
                 </div>
-                <div>${m.content}</div>
-                </div>
-        </div>
-    `;
-}).join('');
+            `;
+        }).join('');
+        
+        // Only scroll to bottom if we aren't looking at pins? 
+        // For now, let's keep it scrolling so you see your new sent message.
         container.scrollTop = container.scrollHeight;
     }
 
     // --- 4. STARTUP ---
     async function init() {
-        // Load Theme
         if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        
-        // Load Name
         const saved = localStorage.getItem('savedName');
         if (saved) document.getElementById('username').value = saved;
 
