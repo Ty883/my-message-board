@@ -1,19 +1,18 @@
 <script>
-(function() {
-    // 1. Configuration
+    // 1. Setup - Use a unique name like 'supabaseClient' to avoid conflicts
     const SUPABASE_URL = 'YOUR_SUPABASE_URL';
     const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
-
-    // 2. Initialize Client
-    // We check if it exists first to prevent "already declared" errors
-    if (!window.supabaseClient) {
-        window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Check if the library loaded correctly
+    if (!window.supabase) {
+        console.error("Supabase library failed to load from CDN!");
     }
 
-    // 3. Define Functions on the 'window' object 
-    // This ensures the HTML button can ALWAYS find them
-    window.getMessages = async function() {
-        const { data, error } = await window.supabaseClient
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // 2. Fetch Function
+    async function getMessages() {
+        const { data, error } = await supabaseClient
             .from('messages')
             .select('*')
             .order('created_at', { ascending: true });
@@ -21,36 +20,40 @@
         if (error) {
             console.error("Fetch error:", error.message);
         } else {
-            const container = document.getElementById('messages');
-            container.innerHTML = data.map(m => `
-                <div style="margin-bottom: 8px;">
-                    <strong>${m.username}:</strong> ${m.content}
-                </div>
-            `).join('');
-            container.scrollTop = container.scrollHeight;
+            renderMessages(data);
         }
-    };
+    }
 
-    window.sendMessage = async function() {
-        const userField = document.getElementById('username');
-        const contentField = document.getElementById('content');
+    function renderMessages(data) {
+        const container = document.getElementById('messages');
+        if (!data) return;
+        container.innerHTML = data.map(m => `
+            <div class="msg"><strong>${m.username}:</strong> ${m.content}</div>
+        `).join('');
+        container.scrollTop = container.scrollHeight;
+    }
 
-        if (!userField.value || !contentField.value) return alert("Fill in both fields!");
+    // 3. Send Function
+    async function sendMessage() {
+        const username = document.getElementById('username').value;
+        const content = document.getElementById('content').value;
 
-        const { error } = await window.supabaseClient
+        if (!username || !content) return alert("Fill in both fields!");
+
+        const { error } = await supabaseClient
             .from('messages')
-            .insert([{ username: userField.value, content: contentField.value }]);
+            .insert([{ username, content }]);
 
         if (error) {
-            alert("Database Error: " + error.message);
+            console.error("Insert error:", error.message);
+            alert("Error sending: " + error.message);
         } else {
-            contentField.value = '';
-            window.getMessages(); 
+            document.getElementById('content').value = '';
+            getMessages(); 
         }
-    };
+    }
 
-    // 4. Start the board
-    window.getMessages();
-    setInterval(window.getMessages, 3000);
-})();
+    // 4. Start
+    getMessages();
+    setInterval(getMessages, 3000);
 </script>
