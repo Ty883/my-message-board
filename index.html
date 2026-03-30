@@ -22,50 +22,48 @@
     <button onclick="window.handleSend()">Post Message</button>
 
     <script>
-        const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
-        const SB_KEY = 'supabase login
+    const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
+    const SB_KEY = 'supabase login
 supabase init
 supabase link --project-ref iatkqxybgldhxzgqrbxq';
+    
+    let client;
+
+    async function init() {
+        if (window.supabase) {
+            client = window.supabase.createClient(SB_URL, SB_KEY);
+            fetchData();
+            setInterval(fetchData, 3000);
+        } else {
+            setTimeout(init, 500);
+        }
+    }
+
+    async function fetchData() {
+        const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
+        if (error) return console.error(error);
         
-        let client;
+        const container = document.getElementById('messages');
+        container.innerHTML = data.map(m => `<div class="msg"><strong>${m.username}:</strong> ${m.content}</div>`).join('');
+        container.scrollTop = container.scrollHeight;
+    }
 
-        async function init() {
-            if (window.supabase) {
-                client = window.supabase.createClient(SB_URL, SB_KEY);
-                fetchData();
-                setInterval(fetchData, 3000);
-            } else {
-                setTimeout(init, 500);
-            }
+    // By putting 'window.' in front, we guarantee the button can find it
+    window.handleSend = async function() {
+        const u = document.getElementById('username').value;
+        const c = document.getElementById('content').value;
+        if (!u || !c) return alert("Enter name and message");
+
+        const { error } = await client.from('messages').insert([{ username: u, content: c }]);
+        if (error) {
+            alert("Database Error: " + error.message);
+        } else {
+            document.getElementById('content').value = '';
+            fetchData();
         }
+    };
 
-        async function fetchData() {
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-            if (error) {
-                console.error(error);
-                return;
-            }
-            const html = data.map(m => `<div class="msg"><strong>${m.username}:</strong> ${m.content}</div>`).join('');
-            document.getElementById('messages').innerHTML = html || 'No messages yet!';
-            const box = document.getElementById('messages');
-            box.scrollTop = box.scrollHeight;
-        }
-
-        async function handleSend() {
-            const u = document.getElementById('username').value;
-            const c = document.getElementById('content').value;
-            if (!u || !c) return alert("Enter name and message");
-
-            const { error } = await client.from('messages').insert([{ username: u, content: c }]);
-            if (error) {
-                alert("Database Error: " + error.message);
-            } else {
-                document.getElementById('content').value = '';
-                fetchData();
-            }
-        }
-
-        init();
-    </script>
+    init();
+</script>
 </body>
 </html>
