@@ -59,15 +59,11 @@
     <h2>Secret Message Board</h2>
     <div id="messages">Connecting to database...</div>
 
-    <input type="text" id="username" placeholder="Your Name" 
-       oninput="localStorage.setItem('savedName', this.value); fetchData();" 
-       style="width: 20%; margin-bottom: 10px;">
+    <input type="text" id="username" placeholder="Name" oninput="window.saveName(this.value)">
+    <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
 
-<input type="text" id="content" placeholder="Type a message..." 
-       onkeypress="if(event.key === 'Enter') window.handleSend()" 
-       style="width: 60%;">
+<button onclick="window.handleSend()">Send</button>
 
-<button onclick="window.handleSend()" style="width: 15%;">Send</button>
     
 <script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
