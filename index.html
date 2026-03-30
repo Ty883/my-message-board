@@ -22,32 +22,21 @@
     <button onclick="window.handleSend()">Post Message</button>
 
     <script>
-    // 1. Configuration
+    // 1. Setup
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
     const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
-    
     let client;
 
-    // 2. DEFINE SEND FUNCTION FIRST (Prevents the "not a function" error)
-    window.handleSend = async function() {
-        if (!client) return alert("Still connecting to database... please wait a second.");
-        
-        const u = document.getElementById('username').value;
-        const c = document.getElementById('content').value;
-        
-        if (!u || !c) return alert("Enter name and message");
-
-        const { error } = await client.from('messages').insert([{ username: u, content: c }]);
-        
-        if (error) {
-            alert("Database Error: " + error.message);
-        } else {
-            document.getElementById('content').value = '';
-            fetchData();
+    // 2. Color Generator (The "Secret Sauce")
+    function stringToColor(str) {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
         }
-    };
+        return `hsl(${Math.abs(hash) % 360}, 65%, 45%)`;
+    }
 
-    // 3. Initialize connection
+    // 3. Initialize
     async function init() {
         if (window.supabase) {
             client = window.supabase.createClient(SB_URL, SB_KEY);
@@ -58,56 +47,56 @@
         }
     }
 
-    // 4. Load messages
+    // 4. Fetch & Render
     async function fetchData() {
-        // Helper to give each user a unique color based on their name
-function stringToColor(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = str.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return `hsl(${Math.abs(hash) % 360}, 70%, 40%)`;
-}
-
-async function fetchData() {
-    const { data, error } = await client
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-    if (error) return console.error(error);
-    
-    const container = document.getElementById('messages');
-    
-    container.innerHTML = data.map(m => {
-        // Create a pretty timestamp (e.g., 4:30 PM)
-        const time = m.created_at 
-            ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
-            : '--:--';
-            
-        const userColor = stringToColor(m.username || "Anon");
-
-        return `
-            <div class="msg" style="border-left: 4px solid ${userColor}; padding-left: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <strong style="color: ${userColor};">${m.username}</strong>
-                    <small style="color: #aaa; font-size: 0.75rem;">${time}</small>
-                </div>
-                <div style="margin-top: 4px; color: #333;">${m.content}</div>
-            </div>
-        `;
-    }).join('');
-    
-    container.scrollTop = container.scrollHeight;
-}
         const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
         if (error) return console.error(error);
         
-        const html = data.map(m => `<div class="msg"><strong>${m.username}:</strong> ${m.content}</div>`).join('');
-        document.getElementById('messages').innerHTML = html || 'No messages yet!';
-        const box = document.getElementById('messages');
-        box.scrollTop = box.scrollHeight;
+        const container = document.getElementById('messages');
+        
+        container.innerHTML = data.map(m => {
+            const userColor = stringToColor(m.username || "Anon");
+            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+            return `
+                <div class="msg" style="border-left: 5px solid ${userColor}; background: white; padding: 12px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <strong style="color: ${userColor}; font-size: 1.1rem;">${m.username}</strong>
+                        <small style="color: #999;">${time}</small>
+                    </div>
+                    <div style="color: #333; line-height: 1.4;">${m.content}</div>
+                    <div style="margin-top: 8px;">
+                        <button onclick="window.addLike(${m.id}, ${m.likes || 0})" 
+                                style="width: auto; background: #f0f0f0; border: 1px solid #ddd; border-radius: 20px; padding: 2px 10px; cursor: pointer; font-size: 0.8rem;">
+                            ❤️ ${m.likes || 0}
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        container.scrollTop = container.scrollHeight;
     }
+
+    // 5. Global Functions for Buttons
+    window.handleSend = async function() {
+        const u = document.getElementById('username').value;
+        const c = document.getElementById('content').value;
+        if (!u || !c) return alert("Fill out both fields!");
+
+        const { error } = await client.from('messages').insert([{ username: u, content: c, likes: 0 }]);
+        if (error) alert(error.message);
+        else {
+            document.getElementById('content').value = '';
+            fetchData();
+        }
+    };
+
+    window.addLike = async function(id, currentLikes) {
+        const { error } = await client.from('messages').update({ likes: (currentLikes || 0) + 1 }).eq('id', id);
+        if (error) console.error(error);
+        else fetchData();
+    };
 
     init();
 </script>
