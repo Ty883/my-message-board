@@ -45,6 +45,38 @@ input, textarea {
         .msg { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #eee; }
         input { width: 100%; padding: 12px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
         button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+   .msg {
+    display: flex;
+    flex-direction: column; /* Stack name, content, and button vertically */
+    position: relative;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+}
+
+/* This container wraps the button to push it to the right */
+.like-container {
+    display: flex;
+    justify-content: flex-end; /* Pushes content to the right */
+    margin-top: 8px;
+}
+
+/* The actual small button */
+.btn-like {
+    width: auto !important; /* Overrides any full-width settings */
+    padding: 2px 8px !important;
+    font-size: 0.75rem !important;
+    border-radius: 12px !important;
+    background: rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.btn-like:hover {
+    transform: scale(1.1);
+    background: #ffeef0;
+}
     </style>
 </head>
 <body>
