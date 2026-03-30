@@ -5,80 +5,51 @@
     <title>Message Board</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <style>
-        /* 1. Default (Light) Colors */
-:root {
-    --bg: #ffffff;
-    --text: #1a1a1b;
-    --msg-bg: #f0f2f5;
-    --input-bg: #ffffff;
-}
+    :root { --bg: #ffffff; --text: #1a1a1b; --msg-bg: #f0f2f5; }
+    body.dark-mode { --bg: #18191a; --text: #e4e6eb; --msg-bg: #242526; }
 
-/* 2. When the 'dark-mode' class is added to the body, swap the colors */
-body.dark-mode {
-    --bg: #18191a;
-    --text: #e4e6eb;
-    --msg-bg: #242526;
-    --input-bg: #3a3b3c;
-}
+    body { 
+        background-color: var(--bg); 
+        color: var(--text); 
+        font-family: system-ui, sans-serif; 
+        transition: 0.3s; 
+        padding: 20px;
+    }
 
-/* 3. Apply the variables to your elements */
-body {
-    background-color: var(--bg);
-    color: var(--text);
-    transition: background 0.3s ease; /* Makes the transition smooth! */
-    font-family: sans-serif;
-}
+    #messages { 
+        height: 400px; 
+        overflow-y: auto; 
+        border: 1px solid #ccc; 
+        padding: 10px; 
+        margin-bottom: 20px; 
+    }
 
-.msg {
-    background-color: var(--msg-bg);
-    border: 1px solid rgba(0,0,0,0.1);
-    color: var(--text);
-}
+    .msg { 
+        background-color: var(--msg-bg); 
+        padding: 12px; 
+        margin-bottom: 10px; 
+        border-radius: 8px; 
+        display: flex; 
+        flex-direction: column; 
+    }
 
-.msg {
-    display: flex;
-    flex-direction: column; /* Stack name, content, and button vertically */
-    position: relative;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-}
+    .like-container { 
+        display: flex; 
+        justify-content: flex-end; 
+        margin-top: 5px; 
+    }
 
-/* This container wraps the button to push it to the right */
-.like-container {
-    display: flex;
-    justify-content: flex-end; /* Pushes content to the right */
-    margin-top: 8px;
-}
+    .btn-like { 
+        width: auto !important; 
+        padding: 2px 8px; 
+        font-size: 0.8rem; 
+        cursor: pointer; 
+        border-radius: 15px; 
+        border: 1px solid #ddd;
+    }
 
-/* The actual small button */
-.btn-like {
-    width: auto !important; /* Overrides any full-width settings */
-    padding: 2px 8px !important;
-    font-size: 0.75rem !important;
-    border-radius: 12px !important;
-    background: rgba(0,0,0,0.05);
-    border: 1px solid rgba(0,0,0,0.1);
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.btn-like:hover {
-    transform: scale(1.1);
-    background: #ffeef0;
-}
-        
-input, textarea {
-    background-color: var(--input-bg);
-    color: var(--text);
-    border: 1px solid #ccc;
-}
-        body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 20px; }
-        #messages { border: 1px solid #ddd; height: 300px; overflow-y: auto; padding: 10px; margin-bottom: 20px; background: #fafafa; border-radius: 8px; }
-        .msg { background: white; padding: 10px; margin-bottom: 8px; border-radius: 4px; border: 1px solid #eee; }
-        input { width: 100%; padding: 12px; margin-bottom: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-        button { width: 100%; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    </style>
+    input { padding: 8px; margin-right: 5px; }
+</style>
 </head>
 <body>
 
@@ -93,69 +64,22 @@ input, textarea {
     <input type="text" id="content" placeholder="Type a message...">
     <button onclick="window.handleSend()">Post Message</button>
 
-   <script>
-    // 1. Setup
+  <script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
     const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
     let client;
 
-    // 2. Color Generator (The "Secret Sauce")
     function stringToColor(str) {
         let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = str.charCodeAt(i) + ((hash << 5) - hash);
-        }
-        return `hsl(${Math.abs(hash) % 360}, 65%, 45%)`;
+        for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
+        return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
     }
 
-    // 3. Initialize
-    async function init() {
-        if (window.supabase) {
-            client = window.supabase.createClient(SB_URL, SB_KEY);
-            fetchData();
-            setInterval(fetchData, 3000);
-        } else {
-            setTimeout(init, 500);
-        }
-    }
-
-    // 4. Fetch & Render
-    async function fetchData() {
-        const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-        if (error) return console.error(error);
-        
-        const container = document.getElementById('messages');
-        
-        container.innerHTML = data.map(m => {
-            const userColor = stringToColor(m.username || "Anon");
-            const time = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-
-            rreturn `
-    <div class="msg" style="border-left: 5px solid ${userColor};">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <strong style="color: ${userColor};">${m.username}</strong>
-            <small style="color: #999;">${time}</small>
-        </div>
-        
-        <div style="margin-top: 5px;">${contentDisplay}</div>
-
-        <div class="like-container">
-            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">
-                ❤️ ${m.likes || 0}
-            </button>
-        </div>
-    </div>
-            `;
-        }).join('');
-        
-        container.scrollTop = container.scrollHeight;
-    }
-
-    // 5. Global Functions for Buttons
+    // 1. ATTACH FUNCTIONS TO WINDOW IMMEDIATELY
     window.handleSend = async function() {
         const u = document.getElementById('username').value;
         const c = document.getElementById('content').value;
-        if (!u || !c) return alert("Fill out both fields!");
+        if (!u || !c) return alert("Fill both fields");
 
         const { error } = await client.from('messages').insert([{ username: u, content: c, likes: 0 }]);
         if (error) alert(error.message);
@@ -171,33 +95,44 @@ input, textarea {
         else fetchData();
     };
 
-    init();
-          // Check if they previously picked Dark Mode
-if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark-mode');
-}
+    // 2. FETCH DATA
+    async function fetchData() {
+        if (!client) return;
+        const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
+        if (error) return;
 
-// Update the toggle button to save the preference
-const originalToggle = document.body.classList.toggle;
-document.body.classList.toggle = function(className) {
-    const result = originalToggle.call(this, className);
-    if (this.classList.contains('dark-mode')) {
-        localStorage.setItem('theme', 'dark');
-    } else {
-        localStorage.setItem('theme', 'light');
+        const container = document.getElementById('messages');
+        container.innerHTML = data.map(m => {
+            const userColor = stringToColor(m.username || "Anon");
+            const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
+            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
+            
+            return `
+                <div class="msg" style="border-left: 5px solid ${userColor}">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+                        <strong style="color:${userColor}">${m.username}</strong>
+                    </div>
+                    <div style="margin: 5px 0;">${display}</div>
+                    <div class="like-container">
+                        <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+        container.scrollTop = container.scrollHeight;
     }
-    return result;
 
+    // 3. STARTUP
     async function init() {
-    if (window.supabase) {
-        client = window.supabase.createClient(SB_URL, SB_KEY);
-        fetchData(); // Run once immediately
-        setInterval(fetchData, 3000); // Then run every 3 seconds
-    } else {
-        setTimeout(init, 500);
+        if (window.supabase) {
+            client = window.supabase.createClient(SB_URL, SB_KEY);
+            fetchData();
+            setInterval(fetchData, 3000);
+        } else {
+            setTimeout(init, 500);
+        }
     }
-}
-};
+    init();
 </script>
 </body>
 </html>
