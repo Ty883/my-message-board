@@ -172,21 +172,22 @@ const { data, error } = await client
             const userColor = stringToColor(m.username || "Anon");
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
             const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
-            
-            return `
-                <div class="message-row ${isMe ? 'me' : 'them'}">
-                    <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
-                        <div style="font-size:0.75rem; margin-bottom:4px;">
-                            <strong style="color:${isMe ? 'white' : userColor}">${m.username}</strong>
-                        </div>
-                        <div>${display}</div>
-                        <div class="like-container">
-                            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
-                        </div>
-                    </div>
+            container.innerHTML = data.map(m => {
+    const isMe = m.username === currentUser && currentUser !== "";
+    const isPinned = m.is_pinned === true; // Check if it's pinned
+    
+    return `
+        <div class="message-row ${isMe ? 'me' : 'them'} ${isPinned ? 'pinned-msg' : ''}">
+            <div class="msg" style="border-left: 5px solid ${stringToColor(m.username)}">
+                ${isPinned ? '<small style="color:gold;">📌 PINNED ANNOUNCEMENT</small>' : ''}
+                <div style="font-size:0.75rem;">
+                    <strong>${m.username}</strong>
                 </div>
-            `;
-        }).join('');
+                <div>${m.content}</div>
+                </div>
+        </div>
+    `;
+}).join('');
         container.scrollTop = container.scrollHeight;
     }
 
