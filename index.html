@@ -187,6 +187,16 @@ document.body.classList.toggle = function(className) {
         localStorage.setItem('theme', 'light');
     }
     return result;
+
+    async function init() {
+    if (window.supabase) {
+        client = window.supabase.createClient(SB_URL, SB_KEY);
+        fetchData(); // Run once immediately
+        setInterval(fetchData, 3000); // Then run every 3 seconds
+    } else {
+        setTimeout(init, 500);
+    }
+}
 };
 </script>
 </body>
