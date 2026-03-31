@@ -253,10 +253,24 @@
         }
 
         function subscribeToPush() {
-            OneSignalDeferred.push(function(OneSignal) {
-                OneSignal.Notifications.requestPermission();
-            });
+    console.log("Bell clicked - checking OneSignal...");
+    
+    if (typeof OneSignalDeferred === "undefined") {
+        alert("OneSignal script hasn't loaded yet. Check your internet or the Script tag in <head>.");
+        return;
+    }
+
+    OneSignalDeferred.push(async function(OneSignal) {
+        console.log("OneSignal initialized, requesting permission...");
+        try {
+            await OneSignal.Notifications.requestPermission();
+            alert("Check your screen for the permission popup!");
+        } catch (err) {
+            console.error("Permission error:", err);
+            alert("Error: " + err.message);
         }
+    });
+}
 
         function toggleNightMode() {
             document.body.classList.toggle('dark-mode');
