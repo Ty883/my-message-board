@@ -578,6 +578,7 @@ html, body {
 
 
     
+    
 <body>
     <header class="header-area">
         <h1 id="main-title">Secret Message Board</h1>
@@ -598,6 +599,7 @@ html, body {
 </button>
     
 
+    
 
 
     
@@ -623,6 +625,51 @@ html, body {
         fetchData();
     };
 
+async function fetchData() {
+    // 1. Get the data from Supabase
+    const { data, error } = await client
+        .from('messages')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+    if (error) {
+        console.error("Error fetching messages:", error);
+        return;
+    }
+
+    // 2. Create the HTML for each message
+    const messagesHtml = data.map(m => {
+        const isMe = m.username === localStorage.getItem('savedName');
+        
+        // Check if an image exists
+        let imageElement = m.image_data ? 
+            `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
+
+        return `
+            <div class="message-row ${isMe ? 'me' : 'them'}">
+                <div class="msg">
+                    <span class="username-label"><strong>${m.username}</strong></span>
+                    <div class="text-content">${m.content || ''}</div>
+                    ${imageElement}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // 3. Put it on the screen
+    const container = document.getElementById('messages');
+    container.innerHTML = messagesHtml;
+    
+    // 4. Scroll to the bottom so you see the newest message
+    container.scrollTop = container.scrollHeight;
+}
+
+// 5. Run this function immediately when the page loads
+fetchData();
+
+// 6. Refresh every 3 seconds to see new messages from others
+setInterval(fetchData, 3000);
+    
     // --- 2. THE SEND LOGIC (Fixed) ---
     window.handleSend = async function() {
         const u = document.getElementById('username').value;
