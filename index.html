@@ -17,10 +17,17 @@
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-         appId: "85132153-80b2-4746-831f-5ece8e5614b9",
+          appId: "85132153-80b2-4746-831f-5ece8e5614b9",
           allowLocalhostAsSecureOrigin: true,
         });
       });
+
+      // Crucial: Manually register the worker to avoid 404 errors on iOS
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/OneSignalSDKWorker.js')
+          .then(() => console.log("Service Worker Active"))
+          .catch(err => console.error("Worker Registration Failed", err));
+      }
     </script>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
@@ -100,8 +107,6 @@
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
         
         .top-controls { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 15px; z-index: 300; display: flex; gap: 15px; }
-
-        @media (min-width: 1000px) { .msg { max-width: 60%; } }
     </style>
 </head>
 <body>
@@ -130,6 +135,7 @@
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
         const client = supabase.createClient(SB_URL, SB_KEY);
 
+        // --- 2. STORAGE LOGIC ---
         function saveName(val) { localStorage.setItem('savedName', val); }
         function loadName() { 
             const n = localStorage.getItem('savedName');
@@ -144,6 +150,7 @@
 
         function formatTime(ts) { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); }
 
+        // --- 3. FETCH & RENDER ---
         async function fetchData() {
             const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
             if (error) return;
@@ -152,8 +159,6 @@
             if (window.lastFingerprint === fingerprint) return;
             window.lastFingerprint = fingerprint;
             
-            console.log("OneSignal Check:", window.OneSignalDeferred ? "READY" : "MISSING");
-
             const container = document.getElementById('messages');
             const currentUser = localStorage.getItem('savedName');
             
@@ -161,8 +166,6 @@
                 const isMe = m.username === currentUser;
                 const color = getUsernameColor(m.username);
                 const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
-                
-                // Reaction logic
                 const reactions = m.reactions || {};
                 const reactionHTML = Object.entries(reactions).map(([emoji, count]) => 
                     `<button class="reaction-btn" onclick="addReaction('${m.id}', '${emoji}')">${emoji} ${count}</button>`
@@ -188,6 +191,7 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        // --- 4. MESSAGE ACTIONS ---
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
             const c = document.getElementById('content').value;
@@ -222,26 +226,10 @@
             reader.readAsDataURL(input.files[0]);
         }
 
-        document.addEventListener('paste', async (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (const item of items) {
-                if (item.type.includes("image")) {
-                    const file = item.getAsFile();
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                        const u = document.getElementById('username').value || "Anon";
-                        await client.from('messages').insert([{ username: u, image_data: event.target.result, content: "" }]);
-                        fetchData();
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-        });
-
+        // --- 5. NOTIFICATIONS ---
         async function sendPushNotification(sender, text) {
             const appId = "85132153-80b2-4746-831f-5ece8e5614b9";
             const apiKey = "os_v2_app_qujscu4awjdunay7l3hi4vquxfoa62voblsedleorixdazfguggrdhphwviwlyrh424japyswgrrcws6fbsbcwfdyrarkh5r2ciklzy";
-            if(appId.includes("YOUR")) return;
             
             await fetch("https://onesignal.com/api/v1/notifications", {
                 method: "POST",
@@ -255,38 +243,22 @@
             });
         }
 
-    function subscribeToPush() {
-    // 1. Check if the browser even supports Notifications (Chrome on iOS often returns 'false' here)
-    if (!('Notification' in window)) {
-        alert("This browser doesn't support notifications. Please open this site in SAFARI and 'Add to Home Screen' to enable the bell.");
-        return;
-    }
+        function subscribeToPush() {
+            if (!('Notification' in window)) {
+                alert("Please open in SAFARI and 'Add to Home Screen' to enable the bell.");
+                return;
+            }
 
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async function(OneSignal) {
-        try {
-            console.log("Requesting permission...");
-            await OneSignal.Notifications.requestPermission();
-            alert("Check your screen for the 'Allow' prompt!");
-        } catch (err) {
-            alert("OneSignal Error: " + err.message);
+            window.OneSignalDeferred.push(async function(OneSignal) {
+                try {
+                    await OneSignal.Notifications.requestPermission();
+                    alert("Permission request sent!");
+                } catch (err) {
+                    alert("OneSignal Error: " + err.message);
+                }
+            });
         }
-    });
-}
-    // 3. Force a permission request
-    window.OneSignalDeferred.push(async function(OneSignal) {
-        console.log("OneSignal is active. Requesting...");
-        try {
-            // This is the direct 'Ask' command
-            await OneSignal.Notifications.requestPermission();
-            alert("Permission request sent to your browser/phone!");
-        } catch (e) {
-            alert("Error during request: " + e.message);
-        } finally {
-            if(btn) btn.style.opacity = "1";
-        }
-    });
-}
+
         function toggleNightMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -294,11 +266,12 @@
             document.getElementById('theme-meta').setAttribute("content", isDark ? "#18191a" : "#ffffff");
         }
 
+        // --- 6. STARTUP ---
         loadName();
         if (localStorage.getItem('theme') === 'dark') toggleNightMode();
         fetchData();
         setInterval(fetchData, 3000);
-        window.addEventListener('focus', () => { loadName(); fetchData(); });
+        window.addEventListener('focus', fetchData);
     </script>
 </body>
 </html>
