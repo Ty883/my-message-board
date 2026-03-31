@@ -7,6 +7,7 @@
     <title>Message Board</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
+
     
     <style>
     :root { --bg: #ffffff; --text: #1a1a1b; --msg-bg: #f0f2f5; }
@@ -542,11 +543,19 @@ html, body {
 
 /* Images */
 .chat-img {
-    max-width: 100%;
-    max-height: 300px;
-    border-radius: 10px;
+    max-width: 100%;       /* Fits perfectly inside the chat bubble */
+    max-height: 300px;     /* Prevents it from being too tall */
+    border-radius: 12px;   /* Matches your bubble curves */
     margin-top: 10px;
+    display: block;
     border: 1px solid var(--border);
+    cursor: pointer;
+}
+
+/* Ensure the text content doesn't hide if an image is there */
+.text-content {
+    word-wrap: break-word;
+    margin-bottom: 5px;
 }
 
 /* Mobile Overrides */
