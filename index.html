@@ -476,6 +476,26 @@ input[type="text"]:focus {
     z-index: 2000;
     box-sizing: border-box;
 }
+
+        .chat-img {
+    max-width: 100%;
+    max-height: 250px;
+    border-radius: 10px;
+    margin-top: 8px;
+    cursor: pointer;
+    display: block;
+    border: 1px solid var(--border);
+    transition: transform 0.2s;
+}
+
+.chat-img:hover {
+    transform: scale(1.02); /* Slight pop when hovering */
+}
+
+/* Ensure images look good in Night Mode */
+body.dark-mode .chat-img {
+    filter: brightness(0.9);
+}
         
     </style>
     
@@ -556,6 +576,8 @@ input[type="text"]:focus {
 
     // --- 3. THE RENDER LOGIC (With Pinning) ---
     async function fetchData() {
+       
+        
         if (!client) return;
         
         // Correctly ordering: Pins first, then newest at bottom
@@ -577,7 +599,13 @@ input[type="text"]:focus {
             
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
             const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
-            
+            // Inside your .map() loop in fetchData()
+let imageHtml = '';
+if (m.image_data) {
+    imageHtml = `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">`;
+}
+
+// Then add ${imageHtml} inside your message bubble template
             return `
                 <div class="message-row ${isMe ? 'me' : 'them'} ${isPinned ? 'pinned-msg' : ''}">
                     <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
