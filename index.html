@@ -115,8 +115,17 @@
         @media (max-width: 600px) {
             .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
             #messages { top: 95px; }
-            #main-title { font-size: 1rem; margin: 0; }
-        }
+           #main-title {
+    font-size: 1.1rem;
+    margin: 0;
+    white-space: nowrap;
+    /* This is the magic line */
+    color: var(--text); 
+    /* This makes the color swap look smooth instead of a harsh blink */
+    transition: color 0.3s ease; 
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+}
     </style>
 </head>
 <body>
