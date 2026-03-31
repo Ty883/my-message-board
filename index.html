@@ -255,19 +255,24 @@
             });
         }
 
-     async function subscribeToPush() {
-    // 1. Visual feedback so you know the click worked
-    const btn = document.getElementById('bell-button');
-    if(btn) btn.style.opacity = "0.5"; 
-
-    console.log("Checking OneSignal Status...");
-
-    // 2. Check if the SDK is even on the page
-    if (!window.OneSignalDeferred) {
-        alert("CRITICAL: OneSignal SDK not found in <head>. Check your script tags!");
+    function subscribeToPush() {
+    // 1. Check if the browser even supports Notifications (Chrome on iOS often returns 'false' here)
+    if (!('Notification' in window)) {
+        alert("This browser doesn't support notifications. Please open this site in SAFARI and 'Add to Home Screen' to enable the bell.");
         return;
     }
 
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+        try {
+            console.log("Requesting permission...");
+            await OneSignal.Notifications.requestPermission();
+            alert("Check your screen for the 'Allow' prompt!");
+        } catch (err) {
+            alert("OneSignal Error: " + err.message);
+        }
+    });
+}
     // 3. Force a permission request
     window.OneSignalDeferred.push(async function(OneSignal) {
         console.log("OneSignal is active. Requesting...");
