@@ -268,28 +268,33 @@ input[type="text"]:focus {
 
         /* --- TOP HEADER --- */
 /* --- THE HEADER (PC Style: Side-by-Side) --- */
+/* --- THE HEADER (Left-Aligned) --- */
 .header-area {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    height: 70px; /* Slimmer header */
+    height: 70px;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
     z-index: 2000;
     display: flex;
-    flex-direction: row; /* Forces horizontal layout */
-    justify-content: space-between; /* Puts Title on left, Name on right */
+    flex-direction: row; 
+    justify-content: flex-start; /* Aligns everything to the LEFT */
     align-items: center;
     padding: 0 20px;
+    gap: 15px; /* Adds space between the Title and the Name box */
 }
 
-        #main-title {
+/* --- THE TITLE (Night Mode Aware) --- */
+#main-title {
     font-size: 1.1rem;
     margin: 0;
-    white-space: nowrap; /* Prevents title from wrapping to 2 lines */
+    white-space: nowrap;
+    color: var(--text); /* This ensures it flips to white in Night Mode */
+    font-family: 'Poppins', sans-serif;
 }
-
+        
 .header-area h1 {
     font-size: 1.2rem;
     margin: 5px 0;
@@ -301,23 +306,27 @@ input[type="text"]:focus {
     gap: 8px;
 }
 
+/* --- THE USERNAME BOX --- */
 #username {
     width: 120px;
-    padding: 5px 10px;
-    border-radius: 15px;
+    padding: 6px 12px;
+    border-radius: 10px;
     border: 1px solid var(--border);
-    background: rgba(128, 128, 128, 0.1);
-    color: var(--text);
+    background: rgba(128, 128, 128, 0.05);
+    color: var(--text); /* Name text also follows Night Mode */
+    font-size: 0.85rem;
 }
 
         /* --- THE NIGHT MODE BUTTON (Always Visible) --- */
+/* --- THE NIGHT MODE BUTTON (Top Right) --- */
 .btn-night {
     position: fixed;
-    top: 15px;      /* Placed inside the header area but on the far right */
+    top: 15px;
     right: 15px;
-    z-index: 3000;  /* Highest priority */
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    z-index: 3000;
+    padding: 8px 15px;
+    font-size: 0.75rem;
+    border-radius: 20px;
 }
 
 /* --- ADJUST THE MESSAGE BOARD STARTING POINT --- */
