@@ -185,37 +185,45 @@
             fetchData();
         }
 
-        async function fetchData() {
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
-            if (error) return console.error(error);
+    async function fetchData() {
+    const container = document.getElementById('messages');
+    
+    // 1. Check if the user is already at the bottom BEFORE we update
+    // We give it a 50px "buffer" so it's not too sensitive
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
 
-            const currentUser = localStorage.getItem('savedName');
-            const container = document.getElementById('messages');
-            
-            container.innerHTML = data.map(m => {
-                const isMe = m.username === currentUser;
-                const nameColor = getUsernameColor(m.username);
-                const reactions = m.reactions || {};
-                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
-                
-                return `
-                    <div class="message-row ${isMe ? 'me' : 'them'}">
-                        <div class="msg" style="border-left: 5px solid ${nameColor}">
-                            <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                            <div>${m.content || ''}</div>
-                            ${imgTag}
-                            <div class="reaction-bar">
-                                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                            </div>
-                        </div>
+    const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
+    if (error) return console.error(error);
+
+    const currentUser = localStorage.getItem('savedName');
+    
+    container.innerHTML = data.map(m => {
+        const isMe = m.username === currentUser;
+        const nameColor = getUsernameColor(m.username);
+        const reactions = m.reactions || {};
+        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
+        
+        return `
+            <div class="message-row ${isMe ? 'me' : 'them'}">
+                <div class="msg" style="border-left: 5px solid ${nameColor}">
+                    <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                    <div>${m.content || ''}</div>
+                    ${imgTag}
+                    <div class="reaction-bar">
+                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
                     </div>
-                `;
-            }).join('');
-            
-            container.scrollTop = container.scrollHeight;
-        }
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // 2. ONLY scroll to the bottom if the user was already there
+    if (isAtBottom) {
+        container.scrollTop = container.scrollHeight;
+    }
+}
 
         async function handleSend() {
             const u = document.getElementById('username').value;
