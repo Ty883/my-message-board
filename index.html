@@ -503,6 +503,9 @@ input[type="text"]:focus {
     
 </button>
     
+
+
+
     
 <script>
     const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
@@ -643,6 +646,45 @@ window.visualViewport.addEventListener('resize', () => {
         footer.style.bottom = `${window.innerHeight - window.visualViewport.height}px`;
     }
 });     
+
+        // Add this inside your init() function or at the bottom of your script
+const contentInput = document.getElementById('content');
+
+contentInput.addEventListener('paste', async (event) => {
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    
+    for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+            const file = item.getAsFile();
+            const reader = new FileReader();
+            
+            reader.onload = async (e) => {
+                const base64Image = e.target.result;
+                // Show a small preview or just send it immediately
+                if (confirm("Send pasted image?")) {
+                    await sendImageMessage(base64Image);
+                }
+            };
+            
+            reader.readAsDataURL(file);
+        }
+    }
+});
+
+async function sendImageMessage(imageData) {
+    const user = document.getElementById('username').value || 'Anonymous';
+    const { error } = await client
+        .from('messages')
+        .insert([{ 
+            username: user, 
+            image_data: imageData, // The image string
+            content: "[Image Shared]" 
+        }]);
+
+    if (error) console.error(error);
+    else fetchData();
+}
+    
     }
     init();
 </script>
