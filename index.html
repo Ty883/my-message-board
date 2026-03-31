@@ -136,6 +136,14 @@
             .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
             #messages { top: 95px; }
 
+function getUsernameColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    // We use HSL so the colors are always bright and readable
+    return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
+}
             
     </style>
 </head>
