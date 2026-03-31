@@ -111,21 +111,32 @@
         .btn-send { background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
         .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); backdrop-filter: blur(5px); border: 1px solid var(--border); color: var(--text); }
 
+/* --- THIS APPLIES TO BOTH PC AND MOBILE --- */
+#main-title {
+    font-size: 1.1rem;
+    margin: 0;
+    white-space: nowrap;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 600;
+    
+    /* THE MAGIC LINE: This makes it react to the theme toggle */
+    color: var(--text) !important; 
+    transition: color 0.3s ease;
+}
+
+/* Ensure the header background also follows the theme on PC */
+.header-area {
+    background: var(--bg) !important;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.3s ease;
+}
+
         /* 6. MOBILE FIXES */
         @media (max-width: 600px) {
             .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
             #messages { top: 95px; }
-           #main-title {
-    font-size: 1.1rem;
-    margin: 0;
-    white-space: nowrap;
-    /* This is the magic line */
-    color: var(--text); 
-    /* This makes the color swap look smooth instead of a harsh blink */
-    transition: color 0.3s ease; 
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-}
+
+            
     </style>
 </head>
 <body>
