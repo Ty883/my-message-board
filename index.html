@@ -11,12 +11,13 @@
     <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png?v=10">
     <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/000000/chat.png?v=10">
 
+    
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignal.js" async=""></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
         await OneSignal.init({
-          appId: "YOUR_ONESIGNAL_APP_ID",
+         appId: "85132153-80b2-4746-831f-5ece8e5614b9",
           allowLocalhostAsSecureOrigin: true,
         });
       });
@@ -252,14 +253,33 @@
             });
         }
 
-        function subscribeToPush() {
-    console.log("Bell clicked - checking OneSignal...");
+       async function subscribeToPush() {
+    console.log("Attempting to subscribe...");
     
-    if (typeof OneSignalDeferred === "undefined") {
-        alert("OneSignal script hasn't loaded yet. Check your internet or the Script tag in <head>.");
+    if (typeof OneSignalDeferred === 'undefined') {
+        alert("❌ Error: OneSignal script did not load. Check your internet or ad-blocker.");
         return;
     }
 
+    OneSignalDeferred.push(async function(OneSignal) {
+        // Check if already subscribed
+        const isOptedIn = OneSignal.Notifications.permission;
+        console.log("Current Permission Status:", isOptedIn);
+
+        if (isOptedIn === "granted") {
+            alert("✅ You are already subscribed to notifications!");
+        } else {
+            try {
+                // This is the magic command
+                await OneSignal.Notifications.requestPermission();
+                alert("Opening the permission prompt... If nothing appears, ensure you have 'Added to Home Screen'.");
+            } catch (e) {
+                alert("❌ OneSignal Error: " + e.message);
+                console.error(e);
+            }
+        }
+    });
+}
     OneSignalDeferred.push(async function(OneSignal) {
         console.log("OneSignal initialized, requesting permission...");
         try {
