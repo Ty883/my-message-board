@@ -242,6 +242,11 @@
             }
         });
 
-        // Init
+       // Init
         if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        document.
+        document.getElementById('username').value = localStorage.getItem('savedName') || "";
+        fetchData();
+        setInterval(fetchData, 3000);
+    </script>
+</body>
+</html>
