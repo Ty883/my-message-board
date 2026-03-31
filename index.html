@@ -1,936 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Message Board</title>
+    <title>Secret Message Board</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
-
-    
     <style>
-    :root { --bg: #ffffff; --text: #1a1a1b; --msg-bg: #f0f2f5; }
-   body.dark-mode {
-    --bg: #18191a;
-    --text: #ffffff; /* This sets the base text to white */
-    --msg-bg: #242526;
-    --border: #3a3b3c;
-}
-        /* Target the text inside all messages when in Dark Mode */
-body.dark-mode .msg {
-    color: #ffffff !important;
-}
+        /* 1. THEMES & VARIABLES */
+        :root { 
+            --bg: #ffffff; 
+            --text: #1a1a1b; 
+            --border: #e0e0e0;
+            --msg-bg: rgba(255, 255, 255, 0.7);
+        }
+        body.dark-mode {
+            --bg: #18191a;
+            --text: #ffffff;
+            --border: #3a3b3c;
+            --msg-bg: rgba(36, 37, 38, 0.8);
+        }
 
-/* Ensure the username (strong tag) is also bright enough */
-body.dark-mode .msg strong {
-    filter: brightness(1.5); /* Makes the name colors pop more on dark bg */
-}
+        /* 2. ANIMATED BACKGROUND */
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
 
-/* Make sure the 'Them' messages don't stay dark gray */
-body.dark-mode .message-row.them .msg {
-    background-color: #3a3b3c;
-    color: #ffffff;
-}
+        /* 3. LAYOUT (HEADER, MAIN, FOOTER) */
+        .header-area {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 70px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 15px;
+            z-index: 2000;
+        }
 
-   body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    min-height: 100vh;
-}
+        #messages {
+            position: absolute;
+            top: 70px; bottom: 75px;
+            left: 0; right: 0;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            -webkit-overflow-scrolling: touch;
+        }
 
-@keyframes gradientBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-    #messages { 
-        height: 400px; 
-        overflow-y: auto; 
-        border: 1px solid #ccc; 
-        padding: 20px; 
-        margin-bottom: 40px; 
-    }
+        .footer-area {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            height: 75px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            gap: 10px;
+            z-index: 2000;
+        }
 
-   .msg {
-    background: rgba(255, 255, 255, 0.7); /* White with 70% transparency */
-    backdrop-filter: blur(10px); /* The "Frosted" effect */
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-    padding: 15px;
-    border-radius: 16px; /* Extra rounded corners */
-}
+        /* 4. MESSAGE BUBBLES */
+        .message-row { display: flex; width: 100%; margin-bottom: 10px; }
+        .message-row.me { justify-content: flex-end; }
+        .message-row.them { justify-content: flex-start; }
 
-/* Dark mode version */
-body.dark-mode .msg {
-    background: rgba(36, 37, 38, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-    }
-
-        .pinned-msg {
-    border-bottom: 1px dashed #ffd700;
-    padding-bottom: 5px;
-    margin-bottom: 15px !important;
-}
-
-.pinned-msg .msg {
-    box-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
-}
-.pinned-msg .msg {
-    background: #fff9db !important; /* Light yellow for pinned posts */
-    border: 2px solid #fab005 !important;
-    box-shadow: 0 4px 10px rgba(250, 176, 5, 0.2);
-}
-        /* This adds a subtle glow to the pinned messages */
-.pinned-msg .msg {
-    position: relative;
-    background: linear-gradient(135.2deg, rgba(255, 255, 255, 1) 0.8%, rgba(255, 248, 220, 1) 98.2%);
-    border: 1px solid #ffd700 !important;
-    animation: pinPulse 2s infinite;
-}
-
-/* A very gentle pulse to draw the eye */
-@keyframes pinPulse {
-    0% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
-    50% { box-shadow: 0 0 15px rgba(212, 175, 55, 0.5); }
-    100% { box-shadow: 0 0 5px rgba(212, 175, 55, 0.2); }
-}
-
-/* This makes pinned messages "stick" to the top of the message window */
-.pinned-msg {
-    position: sticky;
-    top: 0;
-    z-index: 10; /* Keeps it above other scrolling messages */
-    margin-bottom: 20px;
-}
-
-/* Optional: Add a "Pinned" label that stays visible */
-.pinned-msg .msg::before {
-    content: "📌 ANNOUNCEMENT";
-    display: block;
-    font-size: 0.6rem;
-    font-weight: bold;
-    color: #b8860b;
-    margin-bottom: 5px;
-}
-        
-/* Dark mode version of the pin glow */
-body.dark-mode .pinned-msg .msg {
-    background: linear-gradient(135.2deg, #1e1e1e 0.8%, #2d2a1e 98.2%);
-    border: 1px solid #d4af37 !important;
-}
-
-body.dark-mode .pinned-msg .msg {
-    background: #2d2a1e !important;
-    border: 1px solid #fab005 !important;
-}
-        
-    .like-container { 
-        display: flex; 
-        justify-content: flex-end; 
-        margin-top: 5px; 
-    }
-
-    .btn-like { 
-        width: auto !important; 
-        padding: 2px 8px; 
-        font-size: 0.8rem; 
-        cursor: pointer; 
-        border-radius: 15px; 
-        border: 1px solid #ddd;
-    }
-
-        .btn-like {
-    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.btn-like:hover {
-    transform: scale(1.2) rotate(5deg);
-}
-
-/* --- FABULOUS BUTTON BASE --- */
-button {
-    font-family: 'Poppins', sans-serif;
-    font-weight: 600;
-    border: none;
-    border-radius: 25px; /* The 'Pill' shape */
-    padding: 10px 22px;
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-button:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-}
-
-button:active {
-    transform: translateY(-1px);
-}
-
-/* --- NIGHT MODE TOGGLE (Glass Style) --- */
-.btn-night {
-    background: rgba(255, 255, 255, 0.2);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #333;
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 100;
-}
-
-body.dark-mode .btn-night {
-    background: rgba(0, 0, 0, 0.3);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* --- SEND BUTTON (Gradient Style) --- */
-.btn-send {
-    background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%);
-    color: white;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    letter-spacing: 1px;
-}
-
-.btn-send:hover {
-    filter: brightness(1.1);
-    box-shadow: 0 5px 15px rgba(110, 142, 251, 0.4);
-}
-        
-.input-area {
-    position: fixed;
-    bottom: 0;
-    background: var(--bg);
-    padding: 20px;
-    display: flex;
-    gap: 10px;
-    border-top: 1px solid var(--border);
-}
-
-input[type="text"] {
-    flex-grow: 1;
-    border-radius: 25px;
-    padding: 12px 20px;
-    border: 1px solid #ddd;
-    outline: none;
-}
-
-input[type="text"]:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
-}
-        
-    input { padding: 8px; margin-right: 5px; }
-
-@media (max-width: 600px) {
-    .input-area {
-        flex-direction: column; /* This stacks them vertically! */
-        padding: 10px;
-        gap: 8px;
-    }
-
-    #username {
-        display: block !important; /* This brings it back! */
-        width: 100%; /* Makes it full width on the phone */
-    }
-
-    .btn-send {
-        width: 100%; /* Makes the send button nice and big for thumbs */
-        padding: 12px;
-    }
-}
-    /* 1. Make the message board take up more space */
-    #messages {
-        width: 100%;
-        padding: 10px;
-        margin-top: 70px; /* Space for the floating toggle */
-        scroll-behavior: smooth;
-        -webkit-overflow-scrolling: touch; /* The 'Secret Sauce' for mobile feel */
-    }
-
-    /* 5. Adjust the message bubbles to be wider on small screens */
-    .msg {
-        max-width: 85%;
-        font-size: 0.95rem;
-    }
-}
-
-        /* --- TOP HEADER --- */
-/* --- THE HEADER (PC Style: Side-by-Side) --- */
-/* --- THE HEADER (Left-Aligned) --- */
-.header-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 70px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    z-index: 2000;
-    display: flex;
-    flex-direction: row; 
-    justify-content: flex-start; /* Aligns everything to the LEFT */
-    align-items: center;
-    padding: 0 20px;
-    gap: 15px; /* Adds space between the Title and the Name box */
-}
-
-@media (max-width: 600px) {
-    /* 1. Stack the header elements vertically */
-    .header-area {
-        flex-direction: column !important; 
-        align-items: flex-start !important; /* Forces items to the LEFT */
-        justify-content: center;
-        height: 90px; /* Increased height to fit two rows */
-        padding-left: 20px; /* Keeps that nice left margin */
-        gap: 5px; /* Space between Title and Name box */
-    }
-
-    /* 2. Adjust the Title for the new stack */
-    #main-title {
-        font-size: 1.1rem;
-        text-align: left;
-        width: 100%;
-    }
-
-    /* 3. Make the Name box fit the row width or stay compact */
-    #username {
-        width: 140px; /* Gives you a bit more typing room */
-        margin-left: 0;
-    }
-
-    /* 4. Shift the messages down further so the taller header doesn't cover them */
-    #messages {
-        top: 95px; 
-    }
-}
-        
-/* --- THE TITLE (Night Mode Aware) --- */
-#main-title {
-    font-size: 1.1rem;
-    margin: 0;
-    white-space: nowrap;
-    color: var(--text); /* This ensures it flips to white in Night Mode */
-    font-family: 'Poppins', sans-serif;
-}
-        
-.header-area h1 {
-    font-size: 1.2rem;
-    margin: 5px 0;
-}
-        /* The Name box inside the header */
-.user-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-/* --- THE USERNAME BOX --- */
-#username {
-    width: 120px;
-    padding: 6px 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: rgba(128, 128, 128, 0.05);
-    color: var(--text); /* Name text also follows Night Mode */
-    font-size: 0.85rem;
-}
-
-        /* --- THE NIGHT MODE BUTTON (Always Visible) --- */
-/* --- THE NIGHT MODE BUTTON (Top Right) --- */
-.btn-night {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 3000;
-    padding: 8px 15px;
-    font-size: 0.75rem;
-    border-radius: 20px;
-}
-
-/* --- ADJUST THE MESSAGE BOARD STARTING POINT --- */
-#messages {
-    position: absolute;
-    top: 70px;     /* Starts exactly where the slim header ends */
-    bottom: 70px;  /* Ends where the footer starts */
-    left: 0;
-    right: 0;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: none; /* Fixes the 'edge' showing when scrolling */
-}
-        
-/* --- BOTTOM FOOTER --- */
-.footer-area {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--bg);
-    padding: 15px;
-    display: flex;
-    gap: 10px;
-    border-top: 1px solid var(--border);
-    z-index: 1000;
-}
-
-#content {
-    flex-grow: 1;
-    border-radius: 20px;
-    padding: 12px;
-    font-size: 16px; /* Essential for mobile zoom fix */
-}
-
-/* --- MESSAGE AREA SPACING --- */
-#messages {
-    margin-top: 110px; /* Space for Header */
-    margin-bottom: 80px; /* Space for Footer */
-    padding: 10px;
-    overflow-y: auto;
-}
-
-/* --- MOBILE SPECIFIC FIXES --- */
-@media (max-width: 600px) {
-    .header-area h1 { font-size: 1rem; }
-    
-    .footer-area {
-        padding: 10px;
-        padding-bottom: 25px; /* Extra room for phone 'home' bars */
-    }
-}
-        @media (max-width: 400px) {
-    #main-title {
-        font-size: 0.9rem; /* Shrinks the text slightly on small iPhones */
-    }
-    #username {
-        width: 80px; /* Makes name box smaller to fit */
-    }
-}
-
-        html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden; /* This stops the WHOLE page from bouncing */
-    background-color: var(--bg);
-    position: fixed; /* Prevents "pull-to-refresh" from breaking layout */
-    width: 100%;
-}
-
-/* The Secret Message Board Header */
-.header-area {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 100px; /* Precise height */
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    z-index: 2000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-/* The Message Window (The only part that moves) */
-#messages {
-    position: absolute;
-    top: 100px;    /* Start exactly where header ends */
-    bottom: 70px;  /* End exactly where footer starts */
-    left: 0;
-    right: 0;
-    overflow-y: auto; 
-    padding: 15px;
-    
-    /* THE SMOOTH SCROLL TRICK */
-    -webkit-overflow-scrolling: touch; 
-    scroll-behavior: smooth;
-    overscroll-behavior: contain; /* Prevents the 'edge' from showing */
-}
-
-/* The Input Footer */
-.footer-area {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 70px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding: 10px 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    z-index: 2000;
-    box-sizing: border-box;
-}
+        .msg {
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            background: var(--msg-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
 
         .chat-img {
-    max-width: 1:root {
-    --bg: #ffffff;
-    --text: #1a1a1a;
-    --border: #e0e0e0;
-    --accent: #007bff;
-}
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 12px;
+            margin-top: 8px;
+            display: block;
+            cursor: zoom-in;
+        }
 
-body.dark-mode {
-    --bg: #121212;
-    --text: #ffffff;
-    --border: #333333;
-}
-
-/* Global Setup */
-html, body {
-    height: 100%;
-    margin: 0;
-    overflow: hidden;
-    background-color: var(--bg);
-    color: var(--text);
-    font-family: 'Poppins', sans-serif;
-}
-
-/* Header & Footer Layout */
-.header-area, .footer-area {
-    position: fixed;
-    left: 0;
-    right: 0;
-    background: var(--bg);
-    z-index: 2000;
-    display: flex;
-    align-items: center;
-    padding: 0 20px;
-}
-
-.header-area {
-    top: 0;
-    height: 70px;
-    border-bottom: 1px solid var(--border);
-    justify-content: flex-start;
-    gap: 15px;
-}
-
-.footer-area {
-    bottom: 0;
-    height: 75px;
-    border-top: 1px solid var(--border);
-    gap: 10px;
-}
-
-/* Scrollable Message Area */
-#messages {
-    position: absolute;
-    top: 70px;
-    bottom: 75px;
-    left: 0;
-    right: 0;
-    overflow-y: auto;
-    padding: 20px;
-    -webkit-overflow-scrolling: touch;
-}
-
-/* Images */
-.chat-img {
-    max-width: 100%;       /* Fits perfectly inside the chat bubble */
-    max-height: 300px;     /* Prevents it from being too tall */
-    border-radius: 12px;   /* Matches your bubble curves */
-    margin-top: 10px;
-    display: block;
-    border: 1px solid var(--border);
-    cursor: pointer;
-}
-
-/* Ensure the text content doesn't hide if an image is there */
-.text-content {
-    word-wrap: break-word;
-    margin-bottom: 5px;
-}
-
-/* Mobile Overrides */
-@media (max-width: 600px) {
-    .header-area {
-        flex-direction: column;
-        align-items: flex-start;
-        height: 90px;
-        padding-top: 10px;
-        gap: 5px;
-    }
-    #messages { top: 90px; }
-    #main-title { font-size: 1rem; }
-    #username { width: 130px; }
-}
+        /* 5. INPUTS & BUTTONS */
+        #username { width: 120px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        #content { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         
+        .btn-send { background: linear-gradient(135deg, #6e8efb 0%, #a777e3 100%); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+        .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); backdrop-filter: blur(5px); border: 1px solid var(--border); color: var(--text); }
+
+        /* 6. MOBILE FIXES */
+        @media (max-width: 600px) {
+            .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
+            #messages { top: 95px; }
+            #main-title { font-size: 1rem; margin: 0; }
+        }
     </style>
-
 </head>
-
-
-    
-    
 <body>
+
+    <button class="btn-night" onclick="toggleNightMode()">🌙 Night Mode</button>
+
     <header class="header-area">
         <h1 id="main-title">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
+        <input type="text" id="username" placeholder="Your Name" oninput="saveName(this.value)">
     </header>
 
-    <main id="messages">
-        </main>
+    <main id="messages"></main>
 
     <footer class="footer-area">
-        <input type="text" id="content" placeholder="Type a message or paste image..." onkeypress="if(event.key === 'Enter') window.handleSend()">
-        <button class="btn-send" onclick="window.handleSend()">Send ✈️</button>
+        <input type="text" id="content" placeholder="Type or paste image..." onkeypress="if(event.key === 'Enter') handleSend()">
+        <button class="btn-send" onclick="handleSend()">Send ✈️</button>
     </footer>
 
-    <button class="btn-night" onclick="window.toggleNightMode()">🌙 Night Mode</button>
-</body>
-    
-</button>
-    
+    <script>
+        const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
+        const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
+        const client = supabase.createClient(SB_URL, SB_KEY);
 
-    
+        // --- CORE LOGIC ---
 
+        function saveName(val) { localStorage.setItem('savedName', val); }
 
-    
-<script>
-    const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
-    const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
-    let client;
+        window.toggleNightMode = function() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        };
 
-    // --- 1. HELPERS ---
-    function stringToColor(str) {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
-        return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
-    }
+        async function fetchData() {
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
+            if (error) return console.error(error);
 
-    window.toggleNightMode = function() {
-        const isDark = document.body.classList.toggle('dark-mode');
-        localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    };
+            const currentUser = localStorage.getItem('savedName');
+            const container = document.getElementById('messages');
+            
+            container.innerHTML = data.map(m => {
+                const isMe = m.username === currentUser;
+                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
+                
+                return `
+                    <div class="message-row ${isMe ? 'me' : 'them'}">
+                        <div class="msg">
+                            <strong style="font-size: 0.7rem; opacity: 0.8;">${m.username}</strong>
+                            <div>${m.content || ''}</div>
+                            ${imgTag}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            container.scrollTop = container.scrollHeight;
+        }
 
-    window.saveName = function(name) {
-        localStorage.setItem('savedName', name);
-        fetchData();
-    };
+        async function handleSend() {
+            const u = document.getElementById('username').value;
+            const c = document.getElementById('content').value;
+            if (!u || !c) return;
 
-async function fetchData() {
-    // 1. Get the data from Supabase
-    const { data, error } = await client
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: true });
-
-    if (error) {
-        console.error("Error fetching messages:", error);
-        return;
-    }
-
-    // 2. Create the HTML for each message
-    const messagesHtml = data.map(m => {
-        const isMe = m.username === localStorage.getItem('savedName');
-        
-        // Check if an image exists
-        let imageElement = m.image_data ? 
-            `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
-
-        return `
-            <div class="message-row ${isMe ? 'me' : 'them'}">
-                <div class="msg">
-                    <span class="username-label"><strong>${m.username}</strong></span>
-                    <div class="text-content">${m.content || ''}</div>
-                    ${imageElement}
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    // 3. Put it on the screen
-    const container = document.getElementById('messages');
-    container.innerHTML = messagesHtml;
-    
-    // 4. Scroll to the bottom so you see the newest message
-    container.scrollTop = container.scrollHeight;
-}
-
-// 5. Run this function immediately when the page loads
-fetchData();
-
-// 6. Refresh every 3 seconds to see new messages from others
-setInterval(fetchData, 3000);
-
-// This makes the function "Global" so the button can always find it
-window.toggleNightMode = function() {
-    // 1. Flip the class on the body
-    document.body.classList.toggle('dark-mode');
-    
-    // 2. Optional: Save the preference so it stays dark when you refresh
-    const isDark = document.body.classList.contains('dark-mode');
-    localStorage.setItem('nightMode', isDark);
-    
-    console.log("Night mode is now:", isDark);
-};
-
-// 3. Optional: Check for saved preference on page load
-if (localStorage.getItem('nightMode') === 'true') {
-    document.body.classList.add('dark-mode');
-}
-
-    
-    // --- 2. THE SEND LOGIC (Fixed) ---
-    window.handleSend = async function() {
-        const u = document.getElementById('username').value;
-        const c = document.getElementById('content').value;
-        if (!u || !c) return alert("Fill in your name and message!");
-
-        // We explicitly set is_pinned to false for new messages
-        const { error } = await client.from('messages').insert([
-            { username: u, content: c, likes: 0, is_pinned: false }
-        ]);
-
-        if (error) {
-            console.error("Send Error:", error);
-            alert("Could not send: " + error.message);
-        } else {
+            await client.from('messages').insert([{ username: u, content: c }]);
             document.getElementById('content').value = '';
             fetchData();
         }
-    };
 
-    window.addLike = async function(id, currentLikes) {
-        await client.from('messages').update({ likes: (currentLikes || 0) + 1 }).eq('id', id);
-        fetchData();
-    };
-
-    // --- 3. THE RENDER LOGIC (With Pinning) ---
-    async function fetchData() {
-       
-        if (!client) return;
-        
-        // Correctly ordering: Pins first, then newest at bottom
-        const { data, error } = await client
-            .from('messages')
-            .select('*')
-            .order('is_pinned', { ascending: false }) 
-            .order('created_at', { ascending: true });
-
-        if (error) return console.error("Fetch Error:", error);
-
-        const currentUser = document.getElementById('username').value;
-        const container = document.getElementById('messages');
-        
-        container.innerHTML = data.map(m => {
-            const isMe = m.username === currentUser && currentUser !== "";
-            const isPinned = m.is_pinned === true;
-            const userColor = stringToColor(m.username || "Anon");
-            // Inside your fetchData map loop:
-const messagesHtml = data.map(m => {
-    // 1. Check if there is image data
-    let imageElement = "";
-    if (m.image_data) {
-        imageElement = `<img src="${m.image_data}" class="chat-img" alt="Pasted Image">`;
-    }
-
-    // 2. Build the message bubble
-    return `
-        <div class="message-row ${m.username === localStorage.getItem('savedName') ? 'me' : 'them'}">
-            <div class="msg">
-                <strong>${m.username}</strong>
-                <div>${m.content}</div>
-                ${imageElement} </div>
-        </div>
-    `;
-}).join('');
-
-
-    // 3. Build the bubble
-    return `
-        <div class="message-row ${isMe ? 'me' : 'them'}">
-            <div class="msg">
-                <span class="username-label">${m.username}</span>
-                <div class="text-content">${m.content}</div>
-                ${imageHtml} </div>
-        </div>
-    `;
-}).join('');
-
-document.getElementById('messages').innerHTML = messagesHtml;
-document.getElementById('messages').innerHTML = messagesHtml;
-            const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
-            const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
-            // Inside your .map() loop in fetchData()
-let imageHtml = '';
-if (m.image_data) {
-    imageHtml = `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">`;
-}
-
-// Then add ${imageHtml} inside your message bubble template
-            return `
-                <div class="message-row ${isMe ? 'me' : 'them'} ${isPinned ? 'pinned-msg' : ''}">
-                    <div class="msg" style="${isMe ? 'border-right' : 'border-left'}: 5px solid ${userColor}">
-                        ${isPinned ? '<div style="font-size:0.6rem; color:#d4af37; font-weight:bold;">📌 PINNED</div>' : ''}
-                        <div style="font-size:0.75rem; margin-bottom:4px;">
-                            <strong style="color:${isMe ? 'white' : userColor}">${m.username}</strong>
-                        </div>
-                        <div>${display}</div>
-                        <div class="like-container">
-                            <button class="btn-like" onclick="window.addLike(${m.id}, ${m.likes || 0})">❤️ ${m.likes || 0}</button>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        // Only scroll to bottom if we aren't looking at pins? 
-        // For now, let's keep it scrolling so you see your new sent message.
-        container.scrollTop = container.scrollHeight;
-    }
-
-async function sendImageMessage(base64) {
-    const user = document.getElementById('username').value || 'Anonymous';
-    
-    const { error } = await client
-        .from('messages')
-        .insert([{ 
-            username: user, 
-            image_data: base64, // Must match your Supabase column name exactly!
-            content: ""         // Keeping this empty so only the image shows
-        }]);
-
-    if (error) {
-        console.error("Supabase Error:", error);
-    } else {
-        fetchData(); // Refresh the board immediately
-    }
-}
-    
-    // --- 4. STARTUP ---
-    async function init() {
-       
-        window.toggleNightMode = function() {
-    const isDark = document.body.classList.toggle('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-    
-    // Update the button text/icon based on the mode
-    const btn = document.querySelector('.btn-night');
-    if (btn) {
-        btn.innerHTML = isDark ? '☀️ Light Mode' : '🌙 Night Mode';
-    }
-};
-
-// Update your existing init() function to also check the button text
-async function init() {
-    const savedTheme = localStorage.getItem('theme');
-    const btn = document.querySelector('.btn-night');
-    
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-        if (btn) btn.innerHTML = '☀️ Light Mode';
-    } else {
-        if (btn) btn.innerHTML = '🌙 Night Mode';
-    }
-
-    // ... (rest of your existing init code for Name and Supabase)
-}
-        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        const saved = localStorage.getItem('savedName');
-        if (saved) document.getElementById('username').value = saved;
-
-        if (window.supabase) {
-            client = window.supabase.createClient(SB_URL, SB_KEY);
-            fetchData();
-            setInterval(fetchData, 3000);
-        } else {
-            setTimeout(init, 500);
-        }
-   // This helps the input stay visible when the keyboard pops up
-window.visualViewport.addEventListener('resize', () => {
-    const footer = document.querySelector('.footer-area');
-    if (footer) {
-        // Adjusts the bottom position based on the visible screen height
-        footer.style.bottom = `${window.innerHeight - window.visualViewport.height}px`;
-    }
-});     
-
-        // Add this inside your init() function or at the bottom of your script
-const contentInput = document.getElementById('content');
-
-contentInput.addEventListener('paste', async (event) => {
-    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
-    
-    for (const item of items) {
-        if (item.type.indexOf("image") !== -1) {
-            const file = item.getAsFile();
-            const reader = new FileReader();
-            
-            reader.onload = async (e) => {
-                const base64Image = e.target.result;
-                // Show a small preview or just send it immediately
-                if (confirm("Send pasted image?")) {
-                    await sendImageMessage(base64Image);
+        // --- IMAGE PASTE ---
+        document.addEventListener('paste', async (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.type.includes("image")) {
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const u = document.getElementById('username').value || "Anon";
+                        await client.from('messages').insert([{ username: u, image_data: event.target.result, content: "" }]);
+                        fetchData();
+                    };
+                    reader.readAsDataURL(file);
                 }
-            };
-            
-            reader.readAsDataURL(file);
-        }
-    }
-});
+            }
+        });
 
-async function sendImageMessage(imageData) {
-    const user = document.getElementById('username').value || 'Anonymous';
-    const { error } = await client
-        .from('messages')
-        .insert([{ 
-            username: user, 
-            image_data: imageData, // The image string
-            content: "[Image Shared]" 
-        }]);
-
-    if (error) console.error(error);
-    else fetchData();
-}
-    
-    }
-    init();
-
-// 1. Image Paste Listener
-document.getElementById('content').addEventListener('paste', async (e) => {
-    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-    for (const item of items) {
-        if (item.type.includes("image")) {
-            const file = item.getAsFile();
-            const reader = new FileReader();
-            reader.onload = (event) => sendImageMessage(event.target.result);
-            reader.readAsDataURL(file);
-        }
-    }
-});
-
-// 2. Specialized Image Sender
-async function sendImageMessage(base64) {
-    const user = document.getElementById('username').value || 'Anonymous';
-    await client.from('messages').insert([{ username: user, image_data: base64, content: "" }]);
-    fetchData();
-}
-
-// 3. Clean UI Toggle
-window.toggleNightMode = () => {
-    document.body.classList.toggle('dark-mode');
-    const isDark = document.body.classList.contains('dark-mode');
-    localStorage.setItem('theme', isDark ? 'dark' : 'light');
-};
-    
-</script>
+        // --- STARTUP ---
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        document.getElementById('username').value = localStorage.getItem('savedName') || "";
+        
+        fetchData();
+        setInterval(fetchData, 3000);
+    </script>
 </body>
 </html>
