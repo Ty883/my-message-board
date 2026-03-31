@@ -1,6 +1,6 @@
-I wish that I could be there for my children on thier 7th and 9th birthday.
+wish I could be there for your 7th and 9th birthday;
 
-The next best thing is being able to talk to them.
+next best thing is being able to talk to you.
 
 Love you, A&L
 
