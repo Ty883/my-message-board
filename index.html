@@ -3,7 +3,7 @@
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Message Board</title>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
@@ -543,7 +543,14 @@ async function init() {
         } else {
             setTimeout(init, 500);
         }
-        
+   // This helps the input stay visible when the keyboard pops up
+window.visualViewport.addEventListener('resize', () => {
+    const footer = document.querySelector('.footer-area');
+    if (footer) {
+        // Adjusts the bottom position based on the visible screen height
+        footer.style.bottom = `${window.innerHeight - window.visualViewport.height}px`;
+    }
+});     
     }
     init();
 </script>
