@@ -203,47 +203,50 @@ function formatTime(timestamp) {
             fetchData();
         }
 
-    async function fetchData() {
+   let lastMessageCount = 0; // Track this at the top of your script
+
+async function fetchData() {
     const container = document.getElementById('messages');
     
-    // 1. Check if the user is already at the bottom BEFORE we update
-    // We give it a 50px "buffer" so it's not too sensitive
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
-
+    // 1. Get the data
     const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true });
     if (error) return console.error(error);
 
+    // 2. STOP if nothing has changed (This saves the CPU!)
+    if (data.length === lastMessageCount) return;
+    lastMessageCount = data.length;
+
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 50;
     const currentUser = localStorage.getItem('savedName');
     
+    // 3. Only render if there is new data
     container.innerHTML = data.map(m => {
         const isMe = m.username === currentUser;
         const nameColor = getUsernameColor(m.username);
         const reactions = m.reactions || {};
-        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
+        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
         
         return `
-    <div class="message-row ${isMe ? 'me' : 'them'}">
-        <div class="msg" style="border-left: 5px solid ${nameColor}">
-            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
-                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                <span class="timestamp">${formatTime(m.created_at)}</span>
+            <div class="message-row ${isMe ? 'me' : 'them'}">
+                <div class="msg" style="border-left: 5px solid ${nameColor}">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                        <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                        <span class="timestamp">${formatTime(m.created_at)}</span>
+                    </div>
+                    <div>${m.content || ''}</div>
+                    ${imgTag}
+                    <div class="reaction-bar">
+                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
+                    </div>
+                </div>
             </div>
-            <div>${m.content || ''}</div>
-            ${imgTag}
-            <div class="reaction-bar">
-                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-            </div>
-        </div>
-    </div>
-`;
+        `;
     }).join('');
     
-    // 2. ONLY scroll to the bottom if the user was already there
-    if (isAtBottom) {
-        container.scrollTop = container.scrollHeight;
-    }
+    if (isAtBottom) container.scrollTop = container.scrollHeight;
+}
 }
 
         async function handleSend() {
