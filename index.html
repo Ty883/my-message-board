@@ -126,7 +126,7 @@
             cursor: pointer;
             transition: transform 0.1s;
         }
-
+        
         body.dark-mode .reaction-bar button { background: rgba(255, 255, 255, 0.1); }
         .reaction-bar button:active { transform: scale(0.9); }
 
@@ -139,6 +139,19 @@
             .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
             #messages { top: 95px; }
         }
+        
+.timestamp {
+    font-size: 0.65rem;
+    opacity: 0.5;
+    font-weight: 300;
+    white-space: nowrap;
+}
+
+/* In dark mode, we might want it slightly brighter to stay readable */
+body.dark-mode .timestamp {
+    opacity: 0.7;
+}
+        
     </style>
 </head>
 <body>
@@ -209,19 +222,22 @@ function formatTime(timestamp) {
         const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
         
         return `
-            <div class="message-row ${isMe ? 'me' : 'them'}">
-                <div class="msg" style="border-left: 5px solid ${nameColor}">
-                    <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                    <div>${m.content || ''}</div>
-                    ${imgTag}
-                    <div class="reaction-bar">
-                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                    </div>
-                </div>
+    <div class="message-row ${isMe ? 'me' : 'them'}">
+        <div class="msg" style="border-left: 5px solid ${nameColor}">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                <span class="timestamp">${formatTime(m.created_at)}</span>
             </div>
-        `;
+            <div>${m.content || ''}</div>
+            ${imgTag}
+            <div class="reaction-bar">
+                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
+            </div>
+        </div>
+    </div>
+`;
     }).join('');
     
     // 2. ONLY scroll to the bottom if the user was already there
