@@ -151,6 +151,8 @@
             const fingerprint = JSON.stringify(displayData);
             if (window.lastFingerprint === fingerprint) return;
             window.lastFingerprint = fingerprint;
+            
+            console.log("OneSignal Check:", window.OneSignalDeferred ? "READY" : "MISSING");
 
             const container = document.getElementById('messages');
             const currentUser = localStorage.getItem('savedName');
@@ -253,45 +255,33 @@
             });
         }
 
-       async function subscribeToPush() {
-    console.log("Attempting to subscribe...");
-    
-    if (typeof OneSignalDeferred === 'undefined') {
-        alert("❌ Error: OneSignal script did not load. Check your internet or ad-blocker.");
+     async function subscribeToPush() {
+    // 1. Visual feedback so you know the click worked
+    const btn = document.getElementById('bell-button');
+    if(btn) btn.style.opacity = "0.5"; 
+
+    console.log("Checking OneSignal Status...");
+
+    // 2. Check if the SDK is even on the page
+    if (!window.OneSignalDeferred) {
+        alert("CRITICAL: OneSignal SDK not found in <head>. Check your script tags!");
         return;
     }
 
-    OneSignalDeferred.push(async function(OneSignal) {
-        // Check if already subscribed
-        const isOptedIn = OneSignal.Notifications.permission;
-        console.log("Current Permission Status:", isOptedIn);
-
-        if (isOptedIn === "granted") {
-            alert("✅ You are already subscribed to notifications!");
-        } else {
-            try {
-                // This is the magic command
-                await OneSignal.Notifications.requestPermission();
-                alert("Opening the permission prompt... If nothing appears, ensure you have 'Added to Home Screen'.");
-            } catch (e) {
-                alert("❌ OneSignal Error: " + e.message);
-                console.error(e);
-            }
-        }
-    });
-}
-    OneSignalDeferred.push(async function(OneSignal) {
-        console.log("OneSignal initialized, requesting permission...");
+    // 3. Force a permission request
+    window.OneSignalDeferred.push(async function(OneSignal) {
+        console.log("OneSignal is active. Requesting...");
         try {
+            // This is the direct 'Ask' command
             await OneSignal.Notifications.requestPermission();
-            alert("Check your screen for the permission popup!");
-        } catch (err) {
-            console.error("Permission error:", err);
-            alert("Error: " + err.message);
+            alert("Permission request sent to your browser/phone!");
+        } catch (e) {
+            alert("Error during request: " + e.message);
+        } finally {
+            if(btn) btn.style.opacity = "1";
         }
     });
 }
-
         function toggleNightMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
