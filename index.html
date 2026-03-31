@@ -8,29 +8,21 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#ffffff" id="theme-meta">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png?v=8">
-    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/000000/chat.png?v=8">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png?v=9">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/000000/chat.png?v=9">
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-
-    <link rel="manifest" href="/manifest.json">
     
     <style>
         :root { 
-            --bg: #ffffff; 
-            --text: #1a1a1b; 
-            --border: #e0e0e0;
-            --msg-bg: rgba(255, 255, 255, 0.7); 
-            --accent: #6e8efb;
+            --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0;
+            --msg-bg: rgba(255, 255, 255, 0.7); --accent: #6e8efb;
             --time: rgba(0, 0, 0, 0.4);
         }
         body.dark-mode {
-            --bg: #18191a; 
-            --text: #ffffff; 
-            --border: #2c2d2e;
-            --msg-bg: rgba(40, 40, 42, 0.85);
-            --time: rgba(255, 255, 255, 0.5);
+            --bg: #18191a; --text: #ffffff; --border: #2c2d2e;
+            --msg-bg: rgba(40, 40, 42, 0.85); --time: rgba(255, 255, 255, 0.5);
         }
 
         body {
@@ -38,12 +30,7 @@
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: background-color 0.3s ease;
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
         @keyframes gradientBG {
@@ -54,77 +41,45 @@
 
         .header-area {
             padding: calc(env(safe-area-inset-top) + 10px) 20px 10px;
-            background: var(--bg);
-            border-bottom: 1px solid var(--border);
-            z-index: 100;
-            transition: background-color 0.3s ease;
+            background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100;
         }
 
         #messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px 20px 140px; 
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            -webkit-overflow-scrolling: touch;
+            flex: 1; overflow-y: auto; padding: 20px 20px 140px; 
+            display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch;
         }
 
         .footer-area {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: var(--bg);
-            border-top: 1px solid var(--border);
-            padding: 15px;
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
-            display: flex;
-            gap: 10px;
-            z-index: 200;
-            transition: background-color 0.3s ease;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--bg); border-top: 1px solid var(--border);
+            padding: 12px 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            display: flex; gap: 8px; align-items: center; z-index: 200;
         }
 
         .message-row { display: flex; width: 100%; margin-bottom: 5px; }
         .message-row.me { justify-content: flex-end; }
         
         .msg {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 18px;
-            background: var(--msg-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            color: var(--text);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 85%; padding: 12px 16px; border-radius: 18px;
+            background: var(--msg-bg); backdrop-filter: blur(12px);
+            color: var(--text); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
-        .msg-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            gap: 12px;
-            margin-bottom: 4px;
-        }
-
-        .timestamp {
-            font-size: 0.65rem;
-            color: var(--time);
-            font-weight: 300;
-            white-space: nowrap;
-        }
+        .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+        .timestamp { font-size: 0.65rem; color: var(--time); font-weight: 300; }
 
         .chat-img {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 12px;
-            margin-top: 8px;
-            display: block;
-            cursor: pointer;
+            max-width: 100%; max-height: 300px; border-radius: 12px;
+            margin-top: 8px; display: block; cursor: pointer;
         }
 
-        #username { width: 110px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+        #username { width: 100px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
         #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; }
-        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: 600; }
         
+        .btn-attach { background: #f0f0f0; border: none; font-size: 20px; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        body.dark-mode .btn-attach { background: #2c2d2e; color: white; }
+        
+        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
         .btn-night { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 15px; z-index: 300; background: none; border: none; font-size: 20px; cursor: pointer; }
 
         @media (min-width: 1000px) { .msg { max-width: 60%; } }
@@ -135,14 +90,17 @@
     <button class="btn-night" onclick="toggleNightMode()">🌙</button>
 
     <header class="header-area">
-        <h1 style="font-size: 1.2rem; margin: 10px 0; color: var(--text);">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="saveName(this.value)">
+        <h1 style="font-size: 1.1rem; margin: 5px 0; color: var(--text);">Secret Message Board</h1>
+        <input type="text" id="username" placeholder="Name" oninput="saveName(this.value)">
     </header>
 
     <main id="messages"></main>
 
     <footer class="footer-area">
-        <input type="text" id="content" placeholder="Write a message..." onkeypress="if(event.key === 'Enter') handleSend()">
+        <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
+        <button class="btn-attach" onclick="document.getElementById('file-input').click()">+</button>
+        
+        <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
@@ -157,13 +115,6 @@
             if(n) document.getElementById('username').value = n;
         }
 
-// Register the Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').then(() => {
-      console.log('Service Worker Registered');
-    });
-  }
-        
         function getUsernameColor(str) {
             let hash = 0;
             const name = str || "Anonymous";
@@ -219,6 +170,21 @@
             fetchData();
         }
 
+        // Handle File Upload (+)
+        async function handleFileUpload(input) {
+            if (!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const u = document.getElementById('username').value || "Anon";
+                await client.from('messages').insert([{ username: u, image_data: e.target.result, content: "" }]);
+                fetchData();
+            };
+            reader.readAsDataURL(file);
+            input.value = ""; // Reset
+        }
+
+        // Handle Paste
         document.addEventListener('paste', async (e) => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
             for (const item of items) {
