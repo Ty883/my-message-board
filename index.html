@@ -32,6 +32,15 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            /* ... existing styles ... */
+    transform: translateZ(0); /* Forces GPU usage */
+    will-change: background-position;
+}
+
+.msg {
+    /* ... existing styles ... */
+    will-change: transform; /* Smooths out the scrolling */
+}
         }
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
@@ -155,7 +164,7 @@ body.dark-mode .timestamp {
     </style>
 </head>
 <body>
-
+    
     <button class="btn-night" onclick="toggleNightMode()">🌙 Night Mode</button>
 
     <header class="header-area">
@@ -164,7 +173,7 @@ body.dark-mode .timestamp {
     </header>
 
     <main id="messages"></main>
-
+    
     <footer class="footer-area">
         <input type="text" id="content" placeholder="Type or paste image..." onkeypress="if(event.key === 'Enter') handleSend()">
         <button class="btn-send" onclick="handleSend()">Send ✈️</button>
