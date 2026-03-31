@@ -4,16 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secret Message Board</title>
+    
     <meta name="apple-mobile-web-app-title" content="Secret Board">
-<meta name="application-name" content="Secret Board">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png">
+    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/000000/chat.png">
 
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-<link rel="apple-touch-icon" href="https://your-image-link.com/icon.png">
-<link rel="icon" type="image/png" href="https://thumbnail.imgbin.com/20/12/19/top-secret-top-secret-envelope-illustration-Tha10cjU_t.jpgg">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
@@ -53,11 +50,11 @@
         .header-area {
             position: fixed;
             top: 0; left: 0; right: 0;
-            height: 95px; /* Increased height for stacked layout */
+            height: 95px;
             background: var(--bg) !important;
             border-bottom: 1px solid var(--border);
             display: flex;
-            flex-direction: column; /* Stack Title and Username */
+            flex-direction: column;
             align-items: flex-start;
             justify-content: center;
             padding: 0 20px;
@@ -66,33 +63,34 @@
         }
 
         #messages {
-    position: absolute;
-    top: 95px; 
-    bottom: 0; /* Let it go to the bottom of the screen */
-    left: 0; right: 0;
-    overflow-y: auto;
-    /* This padding ensures the last message sits ABOVE the footer */
-    padding: 20px 20px 100px 20px; 
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
+            position: absolute;
+            top: 95px; 
+            bottom: 0; 
+            left: 0; right: 0;
+            overflow-y: auto;
+            /* 120px padding prevents the send bar from covering the last message */
+            padding: 20px 20px 120px 20px; 
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .footer-area {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    min-height: 75px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    /* This env variable handles the "home bar" on newer iPhones */
-    padding-bottom: calc(10px + env(safe-area-inset-bottom));
-    gap: 10px;
-    z-index: 9999;
-}
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            min-height: 75px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            /* Extra space for iPhone home-swipe bar */
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            gap: 10px;
+            z-index: 9999;
+        }
 
         .message-row { display: flex; width: 100%; }
         .message-row.me { justify-content: flex-end; }
@@ -107,7 +105,6 @@
             color: var(--text);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            transition: border-left 0.3s ease;
         }
 
         .chat-img {
@@ -122,7 +119,6 @@
             font-size: 0.65rem;
             opacity: 0.5;
             font-weight: 300;
-            white-space: nowrap;
         }
 
         .reaction-bar {
@@ -142,17 +138,10 @@
             cursor: pointer;
         }
 
-        body.dark-mode .reaction-bar button { background: rgba(255, 255, 255, 0.1); }
-
-        #username { width: 120px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.85rem; }
+        #username { width: 120px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         #content { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
         .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); color: var(--text); border: 1px solid var(--border); }
-
-        @media (max-width: 600px) {
-            .header-area { height: 95px; }
-            #messages { top: 95px; bottom: 90px; }
-        }
     </style>
 </head>
 <body>
@@ -175,8 +164,6 @@
         const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
         const client = supabase.createClient(SB_URL, SB_KEY);
-
-        let lastMessageCount = 0;
 
         function saveName(val) { localStorage.setItem('savedName', val); }
 
@@ -206,89 +193,55 @@
             fetchData();
         }
 
-     async function fetchData() {
-    const container = document.getElementById('messages');
-    
-    // 1. Fetch data
-    const { data, error } = await client.from('messages')
-        .select('*')
-        .order('created_at', { ascending: false }) 
-        .limit(50);
+        async function fetchData() {
+            const container = document.getElementById('messages');
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+            if (error) return;
 
-    if (error) return console.error(error);
+            const displayData = data ? data.reverse() : [];
+            const currentFingerprint = JSON.stringify(displayData);
+            if (window.lastFingerprint === currentFingerprint) return;
+            window.lastFingerprint = currentFingerprint;
 
-    const displayData = data ? data.reverse() : [];
-
-    // 2. STOPS THE LAG: Check if the message content has actually changed
-    // We create a "fingerprint" of the messages to see if anything is new
-    const currentDataFingerprint = JSON.stringify(displayData);
-    if (window.lastFingerprint === currentDataFingerprint) return; 
-    window.lastFingerprint = currentDataFingerprint;
-
-    // 3. Only run the expensive "HTML building" if there is a change
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-    const currentUser = localStorage.getItem('savedName');
-    
-    container.innerHTML = displayData.map(m => {
-        const isMe = m.username === currentUser;
-        const nameColor = getUsernameColor(m.username);
-        const reactions = m.reactions || {};
-        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
-        
-        return `
-            <div class="message-row ${isMe ? 'me' : 'them'}">
-                <div class="msg" style="border-left: 5px solid ${nameColor}">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
-                        <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                        <span class="timestamp">${formatTime(m.created_at)}</span>
+            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+            const currentUser = localStorage.getItem('savedName');
+            
+            container.innerHTML = displayData.map(m => {
+                const isMe = m.username === currentUser;
+                const nameColor = getUsernameColor(m.username);
+                const reactions = m.reactions || {};
+                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
+                
+                return `
+                    <div class="message-row ${isMe ? 'me' : 'them'}">
+                        <div class="msg" style="border-left: 5px solid ${nameColor}">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                                <span class="timestamp">${formatTime(m.created_at)}</span>
+                            </div>
+                            <div>${m.content || ''}</div>
+                            ${imgTag}
+                            <div class="reaction-bar">
+                                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
+                            </div>
+                        </div>
                     </div>
-                    <div>${m.content || ''}</div>
-                    ${imgTag}
-                    <div class="reaction-bar">
-                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    if (isAtBottom) container.scrollTop = container.scrollHeight;
-}
+                `;
+            }).join('');
+            
+            if (isAtBottom) container.scrollTop = container.scrollHeight;
+        }
 
         async function handleSend() {
-    const u = document.getElementById('username').value || "Anon";
-    const c = document.getElementById('content').value;
-    if (!c) return;
-    
-    await client.from('messages').insert([{ username: u, content: c }]);
-    document.getElementById('content').value = '';
-    
-    // Force a scroll to bottom after sending
-    const container = document.getElementById('messages');
-    setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-    }, 100); 
-
-    fetchData();
-}
-
-        document.addEventListener('paste', async (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (const item of items) {
-                if (item.type.includes("image")) {
-                    const file = item.getAsFile();
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                        const u = document.getElementById('username').value || "Anon";
-                        await client.from('messages').insert([{ username: u, image_data: event.target.result, content: "" }]);
-                        fetchData();
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-        });
+            const u = document.getElementById('username').value || "Anon";
+            const c = document.getElementById('content').value;
+            if (!c) return;
+            await client.from('messages').insert([{ username: u, content: c }]);
+            document.getElementById('content').value = '';
+            fetchData();
+        }
 
         if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
