@@ -144,7 +144,36 @@ function getUsernameColor(str) {
     // We use HSL so the colors are always bright and readable
     return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
 }
-            
+
+                  .reaction-bar {
+    display: flex;
+    gap: 5px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.reaction-bar button {
+    background: rgba(0, 0, 0, 0.05);
+    border: 1px solid var(--border);
+    padding: 2px 8px;
+    font-size: 0.7rem;
+    border-radius: 10px;
+    color: var(--text);
+    box-shadow: none;
+}
+
+body.dark-mode .reaction-bar button {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.reaction-bar button:hover {
+    transform: scale(1.1);
+    background: var(--accent);
+    color: white;
+}
+
+
+                  
     </style>
 </head>
 <body>
@@ -171,7 +200,32 @@ function getUsernameColor(str) {
         // --- CORE LOGIC ---
 
         function saveName(val) { localStorage.setItem('savedName', val); }
+const nameColor = getUsernameColor(m.username);
+const reactions = m.reactions || {};
 
+return `
+    <div class="message-row ${isMe ? 'me' : 'them'}">
+        <div class="msg" style="border-left: 4px solid ${nameColor}">
+            <strong style="color: ${nameColor}; font-size: 0.8rem;">${m.username}</strong>
+            <div class="text-content">${m.content || ''}</div>
+            ${imageElement}
+            
+            <div class="reaction-bar">
+                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions)})">
+                    ❤️ ${reactions['❤️'] || 0}
+                </button>
+                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions)})">
+                    🔥 ${reactions['🔥'] || 0}
+                </button>
+                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions)})">
+                    😂 ${reactions['😂'] || 0}
+                </button>
+            </div>
+        </div>
+    </div>
+`;
+
+        
         window.toggleNightMode = function() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -213,6 +267,19 @@ function getUsernameColor(str) {
             fetchData();
         }
 
+async function addReaction(messageId, emoji, currentReactions) {
+    const reactions = currentReactions || {};
+    reactions[emoji] = (reactions[emoji] || 0) + 1;
+
+    const { error } = await client
+        .from('messages')
+        .update({ reactions: reactions })
+        .eq('id', messageId);
+
+    if (!error) fetchData();
+}
+
+        
         // --- IMAGE PASTE ---
         document.addEventListener('paste', async (e) => {
             const items = (e.clipboardData || e.originalEvent.clipboardData).items;
