@@ -267,31 +267,71 @@ input[type="text"]:focus {
 }
 
         /* --- TOP HEADER --- */
+/* --- THE HEADER (PC Style: Side-by-Side) --- */
 .header-area {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
+    height: 70px; /* Slimmer header */
     background: var(--bg);
-    padding: 10px;
-    text-align: center;
     border-bottom: 1px solid var(--border);
-    z-index: 1000;
+    z-index: 2000;
+    display: flex;
+    flex-direction: row; /* Forces horizontal layout */
+    justify-content: space-between; /* Puts Title on left, Name on right */
+    align-items: center;
+    padding: 0 20px;
+}
+
+        #main-title {
+    font-size: 1.1rem;
+    margin: 0;
+    white-space: nowrap; /* Prevents title from wrapping to 2 lines */
 }
 
 .header-area h1 {
     font-size: 1.2rem;
     margin: 5px 0;
 }
-
-#username {
-    width: 60%;
-    max-width: 200px;
-    padding: 8px;
-    border-radius: 15px;
-    text-align: center;
+        /* The Name box inside the header */
+.user-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
+#username {
+    width: 120px;
+    padding: 5px 10px;
+    border-radius: 15px;
+    border: 1px solid var(--border);
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--text);
+}
+
+        /* --- THE NIGHT MODE BUTTON (Always Visible) --- */
+.btn-night {
+    position: fixed;
+    top: 15px;      /* Placed inside the header area but on the far right */
+    right: 15px;
+    z-index: 3000;  /* Highest priority */
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+/* --- ADJUST THE MESSAGE BOARD STARTING POINT --- */
+#messages {
+    position: absolute;
+    top: 70px;     /* Starts exactly where the slim header ends */
+    bottom: 70px;  /* Ends where the footer starts */
+    left: 0;
+    right: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: none; /* Fixes the 'edge' showing when scrolling */
+}
+        
 /* --- BOTTOM FOOTER --- */
 .footer-area {
     position: fixed;
@@ -328,6 +368,14 @@ input[type="text"]:focus {
     .footer-area {
         padding: 10px;
         padding-bottom: 25px; /* Extra room for phone 'home' bars */
+    }
+}
+        @media (max-width: 400px) {
+    #main-title {
+        font-size: 0.9rem; /* Shrinks the text slightly on small iPhones */
+    }
+    #username {
+        width: 80px; /* Makes name box smaller to fit */
     }
 }
 
@@ -395,9 +443,13 @@ input[type="text"]:focus {
 </head>
 
 <body>
+    <button class="btn-night" onclick="window.toggleNightMode()">🌙 Night Mode</button>
+
     <div class="header-area">
-        <h1>Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
+        <h1 id="main-title">Secret Message Board</h1>
+        <div class="user-pill">
+            <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
+        </div>
     </div>
 
     <div id="messages"></div>
@@ -406,9 +458,8 @@ input[type="text"]:focus {
         <input type="text" id="content" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
         <button class="btn-send" onclick="window.handleSend()">Send ✈️</button>
     </div>
-
-    <button class="btn-night" onclick="window.toggleNightMode()">🌙</button>
-
+</body>
+    
 </button>
     
     
