@@ -496,6 +496,24 @@ input[type="text"]:focus {
 body.dark-mode .chat-img {
     filter: brightness(0.9);
 }
+
+        .chat-img {
+    max-width: 100%;       /* Fits inside the bubble */
+    max-height: 300px;     /* Keeps tall screenshots from being too long */
+    border-radius: 8px;
+    margin-top: 10px;
+    display: block;
+    cursor: zoom-in;       /* Hints that you can click it */
+    border: 1px solid var(--border);
+}
+
+/* Optional: Make it pop slightly when hovered */
+.chat-img:hover {
+    filter: brightness(1.1);
+}
+
+
+        
         
     </style>
     
@@ -577,7 +595,6 @@ body.dark-mode .chat-img {
     // --- 3. THE RENDER LOGIC (With Pinning) ---
     async function fetchData() {
        
-        
         if (!client) return;
         
         // Correctly ordering: Pins first, then newest at bottom
@@ -646,6 +663,20 @@ if (m.image_data) {
         container.scrollTop = container.scrollHeight;
     }
 
+async function sendImageMessage(imageData) {
+    const user = document.getElementById('username').value || 'Anonymous';
+    const { error } = await client
+        .from('messages')
+        .insert([{ 
+            username: user, 
+            image_data: imageData, 
+            content: "" // Leave this empty so only the image shows!
+        }]);
+
+    if (error) console.error(error);
+    else fetchData();
+}
+    
     // --- 4. STARTUP ---
     async function init() {
        
