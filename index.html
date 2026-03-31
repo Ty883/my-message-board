@@ -13,6 +13,8 @@
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+    <link rel="manifest" href="/manifest.json">
     
     <style>
         :root { 
@@ -155,6 +157,13 @@
             if(n) document.getElementById('username').value = n;
         }
 
+// Register the Service Worker
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').then(() => {
+      console.log('Service Worker Registered');
+    });
+  }
+        
         function getUsernameColor(str) {
             let hash = 0;
             const name = str || "Anonymous";
