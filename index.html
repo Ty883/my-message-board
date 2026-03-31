@@ -206,7 +206,19 @@
             const container = document.getElementById('messages');
             
             // Only select the last 50 messages to keep things fast
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
+           // 1. Get the 50 NEWEST messages (descending order)
+const { data, error } = await client.from('messages')
+    .select('*')
+    .order('created_at', { ascending: false }) 
+    .limit(50);
+
+if (error) return console.error(error);
+
+// 2. Flip them back so the newest is at the bottom of the chat
+const displayData = data.reverse(); 
+
+// 3. Use displayData.map instead of data.map in your innerHTML string
+container.innerHTML = displayData.map(m => { ...
             if (error) return console.error(error);
 
             // LAG FIX: If no new messages, stop everything right here
