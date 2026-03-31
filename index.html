@@ -23,16 +23,17 @@
         }
 
         body {
-    font-family: 'Poppins', sans-serif;
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    margin: 0;
-    height: 100dvh; /* Changed to dvh for mobile sync */
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            margin: 0;
+            height: 100dvh; 
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -50,43 +51,35 @@
             padding: 0 20px;
             gap: 15px;
             z-index: 2000;
-            transition: background 0.3s ease;
         }
 
-        #main-title {
-            font-size: 1.1rem;
-            margin: 0;
-            color: var(--text) !important;
-            transition: color 0.3s ease;
+        #messages {
+            position: absolute;
+            top: 70px; 
+            bottom: 85px; 
+            left: 0; right: 0;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
         }
 
-       #messages {
-    position: absolute;
-    top: 70px; 
-    bottom: 80px; /* Adjusted to sit above the footer */
-    left: 0; right: 0;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
-        
-     .footer-area {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    height: auto; /* Dynamic height */
-    min-height: 70px;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 10px 15px;
-    padding-bottom: calc(10px + env(safe-area-inset-bottom)); /* Fix for iPhone home bar */
-    gap: 10px;
-    z-index: 9999; /* Higher z-index to stay on top */
+        .footer-area {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            min-height: 75px;
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            gap: 10px;
+            z-index: 9999;
+        }
 
         .message-row { display: flex; width: 100%; }
         .message-row.me { justify-content: flex-end; }
@@ -101,8 +94,6 @@
             color: var(--text);
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             border: 1px solid rgba(255,255,255,0.2);
-            transition: border-left 0.3s ease;
-            will-change: transform;
         }
 
         .chat-img {
@@ -116,7 +107,6 @@
         .timestamp {
             font-size: 0.65rem;
             opacity: 0.5;
-            font-weight: 300;
             white-space: nowrap;
         }
 
@@ -124,7 +114,6 @@
             display: flex;
             gap: 5px;
             margin-top: 8px;
-            flex-wrap: wrap;
         }
 
         .reaction-bar button {
@@ -137,16 +126,15 @@
             cursor: pointer;
         }
 
-        body.dark-mode .reaction-bar button { background: rgba(255, 255, 255, 0.1); }
-
-        #username { width: 120px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        #username { width: 100px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         #content { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
         .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); color: var(--text); border: 1px solid var(--border); }
 
         @media (max-width: 600px) {
-            .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
-            #messages { top: 95px; }
+            .header-area { height: 60px; }
+            #messages { top: 60px; bottom: 90px; }
+            #username { width: 80px; }
         }
     </style>
 </head>
@@ -155,15 +143,15 @@
     <button class="btn-night" onclick="toggleNightMode()">🌙 Night Mode</button>
 
     <header class="header-area">
-        <h1 id="main-title">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="saveName(this.value)">
+        <h1 style="font-size: 1rem; margin: 0; color: var(--text);">Secret Board</h1>
+        <input type="text" id="username" placeholder="Name" oninput="saveName(this.value)">
     </header>
 
     <main id="messages"></main>
 
     <footer class="footer-area">
-        <input type="text" id="content" placeholder="Type or paste image..." onkeypress="if(event.key === 'Enter') handleSend()">
-        <button class="btn-send" onclick="handleSend()">Send ✈️</button>
+        <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
+        <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
     <script>
@@ -194,92 +182,43 @@
             localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
         };
 
-        async function addReaction(msgId, emoji, currentReactions) {
-            const reactions = currentReactions || {};
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
-            await client.from('messages').update({ reactions }).eq('id', msgId);
-            fetchData();
-        }
-
         async function fetchData() {
-    const container = document.getElementById('messages');
-    
-    // Fetch the 50 LATEST messages instead of the first 50
-    const { data, error } = await client.from('messages')
-        .select('*')
-        .order('created_at', { ascending: false }) 
-        .limit(50);
+            const container = document.getElementById('messages');
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+            if (error) return console.error(error);
 
-    if (error) return console.error(error);
+            const displayData = data ? data.reverse() : [];
+            if (displayData.length === lastMessageCount) return;
+            lastMessageCount = displayData.length;
 
-    // Reverse them so the oldest of the 50 is at the top
-    const displayData = data.reverse();
-
-    if (displayData.length === lastMessageCount) return;
-    lastMessageCount = displayData.length;
-
-    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-    const currentUser = localStorage.getItem('savedName');
-    
-    // Map through displayData
-    container.innerHTML = displayData.map(m => {
-        const isMe = m.username === currentUser;
-        const nameColor = getUsernameColor(m.username);
-        const reactions = m.reactions || {};
-        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
-        
-        return `
-            <div class="message-row ${isMe ? 'me' : 'them'}">
-                <div class="msg" style="border-left: 5px solid ${nameColor}">
-                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
-                        <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                        <span class="timestamp">${formatTime(m.created_at)}</span>
+            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+            const currentUser = localStorage.getItem('savedName');
+            
+            container.innerHTML = displayData.map(m => {
+                const isMe = m.username === currentUser;
+                const nameColor = getUsernameColor(m.username);
+                const reactions = m.reactions || {};
+                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy">` : "";
+                
+                return `
+                    <div class="message-row ${isMe ? 'me' : 'them'}">
+                        <div class="msg" style="border-left: 5px solid ${nameColor}">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                                <strong style="color: ${nameColor}; font-size: 0.75rem;">${m.username}</strong>
+                                <span class="timestamp">${formatTime(m.created_at)}</span>
+                            </div>
+                            <div>${m.content || ''}</div>
+                            ${imgTag}
+                        </div>
                     </div>
-                    <div>${m.content || ''}</div>
-                    ${imgTag}
-                    <div class="reaction-bar">
-                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-    
-    if (isAtBottom) container.scrollTop = container.scrollHeight;
-}
+                `;
+            }).join('');
+            
+            if (isAtBottom) container.scrollTop = container.scrollHeight;
+        }
 
         async function handleSend() {
-            const u = document.getElementById('username').value;
+            const u = document.getElementById('username').value || "Anon";
             const c = document.getElementById('content').value;
-            if (!u || !c) return;
-            await client.from('messages').insert([{ username: u, content: c }]);
-            document.getElementById('content').value = '';
-            fetchData();
-        }
-
-        document.addEventListener('paste', async (e) => {
-            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-            for (const item of items) {
-                if (item.type.includes("image")) {
-                    const file = item.getAsFile();
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                        const u = document.getElementById('username').value || "Anon";
-                        await client.from('messages').insert([{ username: u, image_data: event.target.result, content: "" }]);
-                        fetchData();
-                    };
-                    reader.readAsDataURL(file);
-                }
-            }
-        });
-
-        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        document.getElementById('username').value = localStorage.getItem('savedName') || "";
-        
-        fetchData();
-        setInterval(fetchData, 3000);
-    </script>
-</body>
-</html>
+            if (!c) return;
+            await client.from('messages').
