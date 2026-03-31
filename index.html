@@ -710,18 +710,22 @@ if (m.image_data) {
         container.scrollTop = container.scrollHeight;
     }
 
-async function sendImageMessage(imageData) {
+async function sendImageMessage(base64) {
     const user = document.getElementById('username').value || 'Anonymous';
+    
     const { error } = await client
         .from('messages')
         .insert([{ 
             username: user, 
-            image_data: imageData, 
-            content: "" // Leave this empty so only the image shows!
+            image_data: base64, // Must match your Supabase column name exactly!
+            content: ""         // Keeping this empty so only the image shows
         }]);
 
-    if (error) console.error(error);
-    else fetchData();
+    if (error) {
+        console.error("Supabase Error:", error);
+    } else {
+        fetchData(); // Refresh the board immediately
+    }
 }
     
     // --- 4. STARTUP ---
