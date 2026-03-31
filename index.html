@@ -687,7 +687,28 @@ const messagesHtml = data.map(m => {
         </div>
     `;
 }).join('');
+const messagesHtml = data.map(m => {
+    // 1. Determine if this is "Me" or "Them"
+    const isMe = m.username === localStorage.getItem('savedName');
+    
+    // 2. Check if there is an image. If so, create an <img> tag.
+    let imageHtml = "";
+    if (m.image_data) {
+        imageHtml = `<img src="${m.image_data}" class="chat-img" alt="Pasted Image">`;
+    }
 
+    // 3. Build the bubble
+    return `
+        <div class="message-row ${isMe ? 'me' : 'them'}">
+            <div class="msg">
+                <span class="username-label">${m.username}</span>
+                <div class="text-content">${m.content}</div>
+                ${imageHtml} </div>
+        </div>
+    `;
+}).join('');
+
+document.getElementById('messages').innerHTML = messagesHtml;
 document.getElementById('messages').innerHTML = messagesHtml;
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
             const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
