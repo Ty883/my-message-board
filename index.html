@@ -287,23 +287,32 @@ input[type="text"]:focus {
 }
 
 @media (max-width: 600px) {
-    /* Force the header to stay as a horizontal row, not a stack */
+    /* 1. Stack the header elements vertically */
     .header-area {
-        flex-direction: row !important; 
-        justify-content: flex-start !important;
-        padding: 0 10px;
-        gap: 10px;
-        height: 60px; /* Slightly slimmer for mobile */
+        flex-direction: column !important; 
+        align-items: flex-start !important; /* Forces items to the LEFT */
+        justify-content: center;
+        height: 90px; /* Increased height to fit two rows */
+        padding-left: 20px; /* Keeps that nice left margin */
+        gap: 5px; /* Space between Title and Name box */
     }
 
+    /* 2. Adjust the Title for the new stack */
     #main-title {
-        font-size: 0.9rem; /* Shrink title slightly so it fits next to the name */
+        font-size: 1.1rem;
         text-align: left;
+        width: 100%;
     }
 
+    /* 3. Make the Name box fit the row width or stay compact */
     #username {
-        width: 80px; /* Make the name box narrow so it doesn't push the title off */
-        font-size: 0.8rem;
+        width: 140px; /* Gives you a bit more typing room */
+        margin-left: 0;
+    }
+
+    /* 4. Shift the messages down further so the taller header doesn't cover them */
+    #messages {
+        top: 95px; 
     }
 }
         
