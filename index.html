@@ -3,39 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secret Message Board</title>
+    <title>Secret Board</title>
     
-    <meta name="apple-mobile-web-app-title" content="Secret Board">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png?v=2">
-    <link rel="icon" type="image/png" href="https://img.icons8.com/fluency/192/000000/chat.png?v=2">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/chat.png?v=4">
 
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://iatkqxybgldhxzgqrbxq.supabase.co">
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     
     <style>
         :root { 
-            --bg: #ffffff; 
-            --text: #1a1a1b; 
-            --border: #e0e0e0;
-            --msg-bg: rgba(255, 255, 255, 0.7);
-            --accent: #6e8efb;
+            --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0;
+            --msg-bg: rgba(255, 255, 255, 0.7); --accent: #6e8efb;
         }
         body.dark-mode {
-            --bg: #18191a;
-            --text: #ffffff;
-            --border: #3a3b3c;
+            --bg: #18191a; --text: #ffffff; --border: #3a3b3c;
             --msg-bg: rgba(36, 37, 38, 0.8);
         }
 
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
             margin: 0;
-            height: 100dvh; 
+            height: 100vh;
+            height: -webkit-fill-available;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -48,116 +42,71 @@
         }
 
         .header-area {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 95px;
-            background: var(--bg) !important;
+            padding: 40px 20px 10px; /* Extra top padding for status bar */
+            background: var(--bg);
             border-bottom: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 0 20px;
-            gap: 5px;
-            z-index: 2000;
+            z-index: 10;
         }
 
         #messages {
-            position: absolute;
-            top: 95px; 
-            bottom: 0; 
-            left: 0; right: 0;
+            flex: 1;
             overflow-y: auto;
-            /* 120px padding prevents the send bar from covering the last message */
-            padding: 20px 20px 120px 20px; 
+            padding: 20px;
+            /* Extra bottom padding so the last message clears the footer */
+            padding-bottom: 140px; 
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            scroll-behavior: smooth;
+            gap: 12px;
             -webkit-overflow-scrolling: touch;
         }
 
         .footer-area {
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            min-height: 75px;
             background: var(--bg);
             border-top: 1px solid var(--border);
-            display: flex;
-            align-items: center;
             padding: 10px 15px;
-            /* Extra space for iPhone home-swipe bar */
-            padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            /* Critical Fix for overlap: */
+            padding-bottom: calc(20px + env(safe-area-inset-bottom));
+            display: flex;
             gap: 10px;
-            z-index: 9999;
+            align-items: center;
+            z-index: 20;
         }
 
         .message-row { display: flex; width: 100%; }
         .message-row.me { justify-content: flex-end; }
-        .message-row.them { justify-content: flex-start; }
-
         .msg {
             max-width: 80%;
-            padding: 12px 18px;
+            padding: 10px 15px;
             border-radius: 18px;
             background: var(--msg-bg);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(8px);
             color: var(--text);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
         }
 
-        .chat-img {
-            max-width: 100%;
-            max-height: 250px;
-            border-radius: 12px;
-            margin-top: 8px;
-            display: block;
-        }
-
-        .timestamp {
-            font-size: 0.65rem;
-            opacity: 0.5;
-            font-weight: 300;
-        }
-
-        .reaction-bar {
-            display: flex;
-            gap: 5px;
-            margin-top: 8px;
-            flex-wrap: wrap;
-        }
-
-        .reaction-bar button {
-            background: rgba(0, 0, 0, 0.05);
-            border: 1px solid var(--border);
-            padding: 2px 8px;
-            font-size: 0.7rem;
-            border-radius: 10px;
-            color: var(--text);
-            cursor: pointer;
-        }
-
-        #username { width: 120px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-        #content { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
-        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
-        .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); color: var(--text); border: 1px solid var(--border); }
+        #username { width: 100px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; /* Prevents auto-zoom on iOS */}
+        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: 600; }
+        
+        .btn-night { position: fixed; top: 45px; right: 15px; z-index: 30; padding: 5px 12px; border-radius: 15px; background: rgba(0,0,0,0.1); border: none; font-size: 12px; }
     </style>
 </head>
 <body>
 
-    <button class="btn-night" onclick="toggleNightMode()">🌙 Night Mode</button>
+    <button class="btn-night" onclick="toggleNightMode()">🌙</button>
 
     <header class="header-area">
-        <h1 style="font-size: 1.1rem; margin: 0; color: var(--text);">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="saveName(this.value)">
+        <h1 style="font-size: 1.1rem; margin: 0 0 8px 0; color: var(--text);">Secret Message Board</h1>
+        <input type="text" id="username" placeholder="Name" oninput="saveName(this.value)">
     </header>
 
     <main id="messages"></main>
 
     <footer class="footer-area">
-        <input type="text" id="content" placeholder="Type or paste image..." onkeypress="if(event.key === 'Enter') handleSend()">
-        <button class="btn-send" onclick="handleSend()">Send ✈️</button>
+        <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
+        <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
     <script>
@@ -165,89 +114,71 @@
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
         const client = supabase.createClient(SB_URL, SB_KEY);
 
+        // PERSISTENCE FIX: Load name on start AND whenever app becomes visible
+        function loadSavedName() {
+            const saved = localStorage.getItem('savedName');
+            if (saved) document.getElementById('username').value = saved;
+        }
+
         function saveName(val) { localStorage.setItem('savedName', val); }
 
         function getUsernameColor(str) {
             let hash = 0;
             const name = str || "Anonymous";
-            for (let i = 0; i < name.length; i++) {
-                hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            return `hsl(${Math.abs(hash) % 360}, 75%, 45%)`;
-        }
-
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        }
-
-        window.toggleNightMode = function() {
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
-        };
-
-        async function addReaction(msgId, emoji, currentReactions) {
-            const reactions = currentReactions || {};
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
-            await client.from('messages').update({ reactions }).eq('id', msgId);
-            fetchData();
+            for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            return `hsl(${Math.abs(hash) % 360}, 70%, 45%)`;
         }
 
         async function fetchData() {
-            const container = document.getElementById('messages');
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
             if (error) return;
 
             const displayData = data ? data.reverse() : [];
-            const currentFingerprint = JSON.stringify(displayData);
-            if (window.lastFingerprint === currentFingerprint) return;
-            window.lastFingerprint = currentFingerprint;
+            const fingerprint = JSON.stringify(displayData);
+            if (window.lastFingerprint === fingerprint) return; // SPEED FIX: Don't redraw if no changes
+            window.lastFingerprint = fingerprint;
 
-            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 150;
+            const container = document.getElementById('messages');
             const currentUser = localStorage.getItem('savedName');
             
             container.innerHTML = displayData.map(m => {
                 const isMe = m.username === currentUser;
-                const nameColor = getUsernameColor(m.username);
-                const reactions = m.reactions || {};
-                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
-                
+                const color = getUsernameColor(m.username);
                 return `
                     <div class="message-row ${isMe ? 'me' : 'them'}">
-                        <div class="msg" style="border-left: 5px solid ${nameColor}">
-                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
-                                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                                <span class="timestamp">${formatTime(m.created_at)}</span>
-                            </div>
+                        <div class="msg" style="border-left: 4px solid ${color}">
+                            <div style="font-size: 0.7rem; color: ${color}; font-weight: 600; margin-bottom: 2px;">${m.username}</div>
                             <div>${m.content || ''}</div>
-                            ${imgTag}
-                            <div class="reaction-bar">
-                                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                            </div>
                         </div>
                     </div>
                 `;
             }).join('');
             
-            if (isAtBottom) container.scrollTop = container.scrollHeight;
+            container.scrollTop = container.scrollHeight;
         }
 
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
             const c = document.getElementById('content').value;
             if (!c) return;
-            await client.from('messages').insert([{ username: u, content: c }]);
             document.getElementById('content').value = '';
+            await client.from('messages').insert([{ username: u, content: c }]);
             fetchData();
         }
 
+        function toggleNightMode() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        }
+
+        // Run on load
+        loadSavedName();
         if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
-        document.getElementById('username').value = localStorage.getItem('savedName') || "";
-        
         fetchData();
-        setInterval(fetchData, 3000);
+        setInterval(fetchData, 4000);
+
+        // Focus/Resume Fix
+        window.addEventListener('focus', () => { loadSavedName(); fetchData(); });
     </script>
 </body>
 </html>
