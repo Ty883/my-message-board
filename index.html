@@ -96,4 +96,184 @@
         .msg {
             max-width: 80%;
             padding: 12px 18px;
-            border-radius: 1
+            border-radius: 18px;
+            background: var(--msg-bg);
+            backdrop-filter: blur(10px);
+            color: var(--text);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: border-left 0.3s ease;
+            will-change: transform;
+        }
+
+        .chat-img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 12px;
+            margin-top: 8px;
+            display: block;
+        }
+
+        .timestamp {
+            font-size: 0.65rem;
+            opacity: 0.5;
+            font-weight: 300;
+            white-space: nowrap;
+        }
+
+        .reaction-bar {
+            display: flex;
+            gap: 5px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .reaction-bar button {
+            background: rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            padding: 2px 8px;
+            font-size: 0.7rem;
+            border-radius: 10px;
+            color: var(--text);
+            cursor: pointer;
+        }
+
+        body.dark-mode .reaction-bar button { background: rgba(255, 255, 255, 0.1); }
+
+        #username { width: 120px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        #content { flex-grow: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; }
+        .btn-night { position: fixed; top: 15px; right: 15px; z-index: 3000; padding: 8px 15px; border-radius: 20px; cursor: pointer; background: rgba(255,255,255,0.3); color: var(--text); border: 1px solid var(--border); }
+
+        @media (max-width: 600px) {
+            .header-area { flex-direction: column; align-items: flex-start; height: 95px; justify-content: center; gap: 5px; }
+            #messages { top: 95px; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="btn-night" onclick="toggleNightMode()">🌙 Night Mode</button>
+
+    <header class="header-area">
+        <h1 id="main-title">Secret Message Board</h1>
+        <input type="text" id="username" placeholder="Your Name" oninput="saveName(this.value)">
+    </header>
+
+    <main id="messages"></main>
+
+    <footer class="footer-area">
+        <input type="text" id="content" placeholder="Type or paste image..." onkeypress="if(event.key === 'Enter') handleSend()">
+        <button class="btn-send" onclick="handleSend()">Send ✈️</button>
+    </footer>
+
+    <script>
+        const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
+        const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
+        const client = supabase.createClient(SB_URL, SB_KEY);
+
+        let lastMessageCount = 0;
+
+        function saveName(val) { localStorage.setItem('savedName', val); }
+
+        function getUsernameColor(str) {
+            let hash = 0;
+            const name = str || "Anonymous";
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return `hsl(${Math.abs(hash) % 360}, 75%, 45%)`;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        window.toggleNightMode = function() {
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', document.body.classList.contains('dark-mode') ? 'dark' : 'light');
+        };
+
+        async function addReaction(msgId, emoji, currentReactions) {
+            const reactions = currentReactions || {};
+            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            await client.from('messages').update({ reactions }).eq('id', msgId);
+            fetchData();
+        }
+
+        async function fetchData() {
+            const container = document.getElementById('messages');
+            
+            // Only select the last 50 messages to keep things fast
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: true }).limit(50);
+            if (error) return console.error(error);
+
+            // LAG FIX: If no new messages, stop everything right here
+            if (data.length === lastMessageCount) return;
+            lastMessageCount = data.length;
+
+            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+            const currentUser = localStorage.getItem('savedName');
+            
+            container.innerHTML = data.map(m => {
+                const isMe = m.username === currentUser;
+                const nameColor = getUsernameColor(m.username);
+                const reactions = m.reactions || {};
+                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
+                
+                return `
+                    <div class="message-row ${isMe ? 'me' : 'them'}">
+                        <div class="msg" style="border-left: 5px solid ${nameColor}">
+                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                                <span class="timestamp">${formatTime(m.created_at)}</span>
+                            </div>
+                            <div>${m.content || ''}</div>
+                            ${imgTag}
+                            <div class="reaction-bar">
+                                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            if (isAtBottom) container.scrollTop = container.scrollHeight;
+        }
+
+        async function handleSend() {
+            const u = document.getElementById('username').value;
+            const c = document.getElementById('content').value;
+            if (!u || !c) return;
+            await client.from('messages').insert([{ username: u, content: c }]);
+            document.getElementById('content').value = '';
+            fetchData();
+        }
+
+        document.addEventListener('paste', async (e) => {
+            const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+            for (const item of items) {
+                if (item.type.includes("image")) {
+                    const file = item.getAsFile();
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const u = document.getElementById('username').value || "Anon";
+                        await client.from('messages').insert([{ username: u, image_data: event.target.result, content: "" }]);
+                        fetchData();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        });
+
+        if (localStorage.getItem('theme') === 'dark') document.body.classList.add('dark-mode');
+        document.getElementById('username').value = localStorage.getItem('savedName') || "";
+        
+        fetchData();
+        setInterval(fetchData, 3000);
+    </script>
+</body>
+</html>
