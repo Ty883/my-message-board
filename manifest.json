@@ -1,10 +1,10 @@
 {
-  "name": "Secret Message Board",
-  "short_name": "MsgBoard",
+  "name": "Secret Board Pro",
+  "short_name": "SecretBoard",
   "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#6e8efb",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "https://img.icons8.com/fluency/192/000000/chat.png",
