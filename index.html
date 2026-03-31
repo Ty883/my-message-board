@@ -478,65 +478,112 @@ input[type="text"]:focus {
 }
 
         .chat-img {
+    max-width: 1:root {
+    --bg: #ffffff;
+    --text: #1a1a1a;
+    --border: #e0e0e0;
+    --accent: #007bff;
+}
+
+body.dark-mode {
+    --bg: #121212;
+    --text: #ffffff;
+    --border: #333333;
+}
+
+/* Global Setup */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Header & Footer Layout */
+.header-area, .footer-area {
+    position: fixed;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.header-area {
+    top: 0;
+    height: 70px;
+    border-bottom: 1px solid var(--border);
+    justify-content: flex-start;
+    gap: 15px;
+}
+
+.footer-area {
+    bottom: 0;
+    height: 75px;
+    border-top: 1px solid var(--border);
+    gap: 10px;
+}
+
+/* Scrollable Message Area */
+#messages {
+    position: absolute;
+    top: 70px;
+    bottom: 75px;
+    left: 0;
+    right: 0;
+    overflow-y: auto;
+    padding: 20px;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Images */
+.chat-img {
     max-width: 100%;
-    max-height: 250px;
+    max-height: 300px;
     border-radius: 10px;
-    margin-top: 8px;
-    cursor: pointer;
-    display: block;
-    border: 1px solid var(--border);
-    transition: transform 0.2s;
-}
-
-.chat-img:hover {
-    transform: scale(1.02); /* Slight pop when hovering */
-}
-
-/* Ensure images look good in Night Mode */
-body.dark-mode .chat-img {
-    filter: brightness(0.9);
-}
-
-        .chat-img {
-    max-width: 100%;       /* Fits inside the bubble */
-    max-height: 300px;     /* Keeps tall screenshots from being too long */
-    border-radius: 8px;
     margin-top: 10px;
-    display: block;
-    cursor: zoom-in;       /* Hints that you can click it */
     border: 1px solid var(--border);
 }
 
-/* Optional: Make it pop slightly when hovered */
-.chat-img:hover {
-    filter: brightness(1.1);
+/* Mobile Overrides */
+@media (max-width: 600px) {
+    .header-area {
+        flex-direction: column;
+        align-items: flex-start;
+        height: 90px;
+        padding-top: 10px;
+        gap: 5px;
+    }
+    #messages { top: 90px; }
+    #main-title { font-size: 1rem; }
+    #username { width: 130px; }
 }
-
-
-        
         
     </style>
-    
+
 </head>
 
+
+    
 <body>
-    <button class="btn-night" onclick="window.toggleNightMode()">🌙 Night Mode</button>
-
-    <div class="header-area">
+    <header class="header-area">
         <h1 id="main-title">Secret Message Board</h1>
-        <div class="user-pill">
-            <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
-        </div>
-<button class="btn-night" onclick="window.toggleNightMode()">🌙 Night Mode</button>
-        
-    </div>
+        <input type="text" id="username" placeholder="Your Name" oninput="window.saveName(this.value)">
+    </header>
 
-    <div id="messages"></div>
+    <main id="messages">
+        </main>
 
-    <div class="footer-area">
-        <input type="text" id="content" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') window.handleSend()">
+    <footer class="footer-area">
+        <input type="text" id="content" placeholder="Type a message or paste image..." onkeypress="if(event.key === 'Enter') window.handleSend()">
         <button class="btn-send" onclick="window.handleSend()">Send ✈️</button>
-    </div>
+    </footer>
+
+    <button class="btn-night" onclick="window.toggleNightMode()">🌙 Night Mode</button>
 </body>
     
 </button>
@@ -765,6 +812,34 @@ async function sendImageMessage(imageData) {
     
     }
     init();
+
+// 1. Image Paste Listener
+document.getElementById('content').addEventListener('paste', async (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.includes("image")) {
+            const file = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = (event) => sendImageMessage(event.target.result);
+            reader.readAsDataURL(file);
+        }
+    }
+});
+
+// 2. Specialized Image Sender
+async function sendImageMessage(base64) {
+    const user = document.getElementById('username').value || 'Anonymous';
+    await client.from('messages').insert([{ username: user, image_data: base64, content: "" }]);
+    fetchData();
+}
+
+// 3. Clean UI Toggle
+window.toggleNightMode = () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+};
+    
 </script>
 </body>
 </html>
