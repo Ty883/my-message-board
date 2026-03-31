@@ -202,58 +202,53 @@
         }
 
         async function fetchData() {
-            const container = document.getElementById('messages');
-            
-            // Only select the last 50 messages to keep things fast
-           // 1. Get the 50 NEWEST messages (descending order)
-const { data, error } = await client.from('messages')
-    .select('*')
-    .order('created_at', { ascending: false }) 
-    .limit(50);
+    const container = document.getElementById('messages');
+    
+    // Fetch the 50 LATEST messages instead of the first 50
+    const { data, error } = await client.from('messages')
+        .select('*')
+        .order('created_at', { ascending: false }) 
+        .limit(50);
 
-if (error) return console.error(error);
+    if (error) return console.error(error);
 
-// 2. Flip them back so the newest is at the bottom of the chat
-const displayData = data.reverse(); 
+    // Reverse them so the oldest of the 50 is at the top
+    const displayData = data.reverse();
 
-// 3. Use displayData.map instead of data.map in your innerHTML string
-container.innerHTML = displayData.map(m => { ...
-            if (error) return console.error(error);
+    if (displayData.length === lastMessageCount) return;
+    lastMessageCount = displayData.length;
 
-            // LAG FIX: If no new messages, stop everything right here
-            if (data.length === lastMessageCount) return;
-            lastMessageCount = data.length;
-
-            const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
-            const currentUser = localStorage.getItem('savedName');
-            
-            container.innerHTML = data.map(m => {
-                const isMe = m.username === currentUser;
-                const nameColor = getUsernameColor(m.username);
-                const reactions = m.reactions || {};
-                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
-                
-                return `
-                    <div class="message-row ${isMe ? 'me' : 'them'}">
-                        <div class="msg" style="border-left: 5px solid ${nameColor}">
-                            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
-                                <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
-                                <span class="timestamp">${formatTime(m.created_at)}</span>
-                            </div>
-                            <div>${m.content || ''}</div>
-                            ${imgTag}
-                            <div class="reaction-bar">
-                                <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
-                                <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
-                            </div>
-                        </div>
+    const isAtBottom = container.scrollHeight - container.scrollTop <= container.clientHeight + 100;
+    const currentUser = localStorage.getItem('savedName');
+    
+    // Map through displayData
+    container.innerHTML = displayData.map(m => {
+        const isMe = m.username === currentUser;
+        const nameColor = getUsernameColor(m.username);
+        const reactions = m.reactions || {};
+        const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" loading="lazy" onclick="window.open(this.src)">` : "";
+        
+        return `
+            <div class="message-row ${isMe ? 'me' : 'them'}">
+                <div class="msg" style="border-left: 5px solid ${nameColor}">
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 4px;">
+                        <strong style="color: ${nameColor} !important; font-size: 0.75rem;">${m.username}</strong>
+                        <span class="timestamp">${formatTime(m.created_at)}</span>
                     </div>
-                `;
-            }).join('');
-            
-            if (isAtBottom) container.scrollTop = container.scrollHeight;
-        }
+                    <div>${m.content || ''}</div>
+                    ${imgTag}
+                    <div class="reaction-bar">
+                        <button onclick="addReaction('${m.id}', '❤️', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">❤️ ${reactions['❤️'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '🔥', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">🔥 ${reactions['🔥'] || 0}</button>
+                        <button onclick="addReaction('${m.id}', '😂', ${JSON.stringify(reactions).replace(/"/g, '&quot;')})">😂 ${reactions['😂'] || 0}</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    if (isAtBottom) container.scrollTop = container.scrollHeight;
+}
 
         async function handleSend() {
             const u = document.getElementById('username').value;
