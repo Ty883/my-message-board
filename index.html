@@ -596,7 +596,26 @@ body.dark-mode .chat-img {
             const isMe = m.username === currentUser && currentUser !== "";
             const isPinned = m.is_pinned === true;
             const userColor = stringToColor(m.username || "Anon");
-            
+            // Inside your fetchData map loop:
+const messagesHtml = data.map(m => {
+    // 1. Check if there is image data
+    let imageElement = "";
+    if (m.image_data) {
+        imageElement = `<img src="${m.image_data}" class="chat-img" alt="Pasted Image">`;
+    }
+
+    // 2. Build the message bubble
+    return `
+        <div class="message-row ${m.username === localStorage.getItem('savedName') ? 'me' : 'them'}">
+            <div class="msg">
+                <strong>${m.username}</strong>
+                <div>${m.content}</div>
+                ${imageElement} </div>
+        </div>
+    `;
+}).join('');
+
+document.getElementById('messages').innerHTML = messagesHtml;
             const isImg = m.content.match(/\.(jpeg|jpg|gif|png)$/) != null && m.content.startsWith('http');
             const display = isImg ? `<img src="${m.content}" style="max-width:100%; border-radius:5px;"/>` : m.content;
             // Inside your .map() loop in fetchData()
