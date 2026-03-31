@@ -286,6 +286,27 @@ input[type="text"]:focus {
     gap: 15px; /* Adds space between the Title and the Name box */
 }
 
+@media (max-width: 600px) {
+    /* Force the header to stay as a horizontal row, not a stack */
+    .header-area {
+        flex-direction: row !important; 
+        justify-content: flex-start !important;
+        padding: 0 10px;
+        gap: 10px;
+        height: 60px; /* Slightly slimmer for mobile */
+    }
+
+    #main-title {
+        font-size: 0.9rem; /* Shrink title slightly so it fits next to the name */
+        text-align: left;
+    }
+
+    #username {
+        width: 80px; /* Make the name box narrow so it doesn't push the title off */
+        font-size: 0.8rem;
+    }
+}
+        
 /* --- THE TITLE (Night Mode Aware) --- */
 #main-title {
     font-size: 1.1rem;
