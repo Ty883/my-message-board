@@ -4,43 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secret Board Pro</title>
-    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-    
     <style>
-        :root { --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0; --msg-bg: rgba(255, 255, 255, 0.75); --accent: #6e8efb; }
-        body.dark-mode { --bg: #18191a; --text: #ffffff; --border: #2c2d2e; --msg-bg: rgba(45, 45, 48, 0.9); }
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-            background-size: 400% 400%;
-            animation: gradientBG 15s ease infinite;
-            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
-        }
-        @keyframes gradientBG { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
-
-        #error-log { position: fixed; top: 0; width: 100%; background: red; color: white; font-size: 10px; z-index: 9999; display: none; padding: 5px; }
-        
-        .header { padding: calc(env(safe-area-inset-top) + 10px) 20px 10px; background: var(--bg); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 120px; }
-        
-        .message-row { display: flex; width: 100%; }
-        .message-row.me { justify-content: flex-end; }
-        .msg { max-width: 80%; padding: 12px; border-radius: 15px; background: var(--msg-bg); backdrop-filter: blur(10px); color: var(--text); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
-        .reactions { margin-top: 8px; display: flex; gap: 5px; }
-        .react-btn { border: none; background: rgba(0,0,0,0.05); border-radius: 10px; padding: 4px 8px; font-size: 13px; cursor: pointer; color: var(--text); }
-        
-        .footer { position: fixed; bottom: 0; width: 100%; background: var(--bg); padding: 12px; display: flex; gap: 8px; box-sizing: border-box; border-top: 1px solid var(--border); padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
-        input { padding: 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
-        .img-preview { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        :root { --bg: #ffffff; --text: #1a1a1b; --accent: #6e8efb; --msg-bg: rgba(255, 255, 255, 0.8); }
+        body.dark-mode { --bg: #18191a; --text: #ffffff; --msg-bg: rgba(45, 45, 48, 0.9); }
+        body { font-family: 'Poppins', sans-serif; background: #6e8efb; margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        .header { padding: 15px; background: var(--bg); display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; }
+        #messages { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 100px; }
+        .msg { max-width: 85%; padding: 10px; border-radius: 15px; background: var(--msg-bg); color: var(--text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .msg.me { align-self: flex-end; border-bottom-right-radius: 2px; background: var(--accent); color: white; }
+        .img-msg { max-width: 100%; border-radius: 10px; margin-top: 5px; }
+        .footer { position: fixed; bottom: 0; width: 100%; background: var(--bg); padding: 10px; display: flex; gap: 8px; box-sizing: border-box; }
+        input { padding: 10px; border-radius: 20px; border: 1px solid #ddd; background: var(--bg); color: var(--text); }
+        .react-btn { border: none; background: rgba(0,0,0,0.05); border-radius: 8px; padding: 3px 6px; font-size: 12px; margin-top: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="error-log"></div>
 
     <header class="header">
         <input type="text" id="username" placeholder="Name" oninput="localStorage.setItem('savedName', this.value)" style="width: 80px;">
@@ -53,34 +33,21 @@
         <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
         <button onclick="document.getElementById('file-input').click()" style="background:none; border:none; font-size:22px;">➕</button>
         <input type="text" id="content" placeholder="Message..." style="flex:1;" onkeypress="if(event.key==='Enter') handleSend()">
-        <button onclick="handleSend()" style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px; font-weight:600;">Send</button>
+        <button onclick="handleSend()" style="background:#6e8efb; color:white; border:none; padding:10px 15px; border-radius:20px;">Send</button>
     </footer>
 
     <script>
-        function logErr(msg) {
-            const el = document.getElementById('error-log');
-            el.style.display = 'block';
-            el.innerHTML += msg + '<br>';
-        }
-
         const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
-        let client;
-
-        try {
-            client = supabase.createClient(SB_URL, SB_KEY);
-        } catch(e) {
-            logErr("Supabase load error: Check internet connection.");
-        }
+        const client = supabase.createClient(SB_URL, SB_KEY);
 
         let lastFp = "";
         const EMOJIS = ['❤️', '😂', '🔥'];
 
         async function fetchData() {
-            if(!client) return;
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(20);
-            
-            if (error) { logErr("DB Error: " + error.message); return; }
+            // FIX 1: Limit to only 10 messages to avoid timeout
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
+            if (error || !data) return;
 
             const fp = JSON.stringify(data);
             if (fp === lastFp) return;
@@ -92,22 +59,15 @@
             container.innerHTML = data.reverse().map(m => {
                 const isMe = m.username === user;
                 const reacts = m.reactions || {};
-                const img = m.image_data ? `<img src="${m.image_data}" class="img-preview">` : "";
+                const img = m.image_data ? `<img src="${m.image_data}" class="img-msg">` : "";
+                const rHtml = EMOJIS.map(e => `<button class="react-btn" onclick="addReaction('${m.id}', '${e}')">${e} ${reacts[e] || 0}</button>`).join(' ');
 
-                const rHtml = EMOJIS.map(e => `
-                    <button class="react-btn" onclick="addReaction('${m.id}', '${e}')">${e} ${reacts[e] || 0}</button>
-                `).join('');
-
-                return `
-                    <div class="message-row ${isMe ? 'me' : ''}">
-                        <div class="msg" style="border-left: 4px solid #6e8efb">
-                            <strong style="font-size: 10px; opacity: 0.6;">${m.username || 'Anon'}</strong>
-                            <div style="margin: 4px 0;">${m.content || ''}</div>
-                            ${img}
-                            <div class="reactions">${rHtml}</div>
-                        </div>
-                    </div>
-                `;
+                return `<div class="msg ${isMe ? 'me' : ''}">
+                    <strong style="font-size: 10px; opacity: 0.7;">${m.username || 'Anon'}</strong>
+                    <div>${m.content || ''}</div>
+                    ${img}
+                    <div>${rHtml}</div>
+                </div>`;
             }).join('');
             container.scrollTop = container.scrollHeight;
         }
@@ -123,13 +83,28 @@
 
         async function handleFileUpload(input) {
             if (!input.files[0]) return;
+            const file = input.files[0];
             const reader = new FileReader();
-            reader.onload = async (e) => {
-                const u = document.getElementById('username').value || "Anon";
-                await client.from('messages').insert([{ username: u, image_data: e.target.result, content: "", reactions: {} }]);
-                fetchData();
+
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = async () => {
+                    // FIX 2: Compress image to 400px wide before sending
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const scale = 400 / img.width;
+                    canvas.width = 400;
+                    canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    const compressed = canvas.toDataURL('image/jpeg', 0.6); // 60% quality
+                    const u = document.getElementById('username').value || "Anon";
+                    await client.from('messages').insert([{ username: u, image_data: compressed, content: "", reactions: {} }]);
+                    fetchData();
+                };
+                img.src = e.target.result;
             };
-            reader.readAsDataURL(input.files[0]);
+            reader.readAsDataURL(file);
         }
 
         async function addReaction(msgId, emoji) {
@@ -140,11 +115,9 @@
             fetchData();
         }
 
-        const saved = localStorage.getItem('savedName');
-        if(saved) document.getElementById('username').value = saved;
-        
+        document.getElementById('username').value = localStorage.getItem('savedName') || "";
         fetchData();
-        setInterval(fetchData, 4000);
+        setInterval(fetchData, 5000); // 5-second sync to reduce server load
     </script>
 </body>
 </html>
