@@ -44,9 +44,9 @@
         }
 
         .load-more {
-            align-self: center; background: rgba(0,0,0,0.1); border: none; 
-            padding: 8px 15px; border-radius: 15px; font-size: 12px; 
-            color: var(--text); cursor: pointer; margin-bottom: 10px;
+            align-self: center; background: rgba(0,0,0,0.15); border: none; 
+            padding: 8px 18px; border-radius: 20px; font-size: 11px; font-weight: 600;
+            color: var(--text); cursor: pointer; margin-bottom: 15px; display: block;
         }
 
         .footer-area {
@@ -67,7 +67,7 @@
         }
 
         .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; margin-bottom: 4px; }
-        .timestamp { font-size: 0.65rem; color: var(--time); font-weight: 400; white-space: nowrap; }
+        .timestamp { font-size: 0.65rem; color: var(--time); font-weight: 400; }
 
         .reactions { margin-top: 10px; display: flex; gap: 6px; }
         .reaction-btn { 
@@ -92,7 +92,7 @@
     </header>
 
     <main id="messages">
-        <button class="load-more" id="loadBtn" onclick="loadMore()">Load Previous Messages</button>
+        <button class="load-more" id="loadBtn" onclick="loadMore()">↑ Load Previous Messages</button>
     </main>
 
     <footer class="footer-area">
@@ -107,8 +107,9 @@
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
         const client = supabase.createClient(SB_URL, SB_KEY);
 
+        const container = document.getElementById('messages');
         let lastFingerprint = "";
-        let limitCount = 12; // Start with 12
+        let limitCount = 10; 
         const EMOJIS = ['❤️', '😂', '🔥'];
 
         function toggleTheme() {
@@ -140,14 +141,12 @@
             const currentFp = JSON.stringify(data.map(m => m.id + JSON.stringify(m.reactions || {})));
             if (currentFp === lastFingerprint && !forceScroll) return;
             
-            const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 100);
+            const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 150);
             lastFingerprint = currentFp;
             
-            const container = document.getElementById('messages');
             const currentUser = localStorage.getItem('savedName') || "";
-            
-            // Keep the Load More button
             const loadBtn = document.getElementById('loadBtn');
+            
             container.innerHTML = '';
             container.appendChild(loadBtn);
 
@@ -226,7 +225,7 @@
             fetchData();
         }
 
-        // INIT
+        // Initialize
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
         if (localStorage.getItem('nightMode') === 'on') {
             document.body.classList.add('dark-mode');
