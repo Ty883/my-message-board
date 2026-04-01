@@ -7,21 +7,13 @@
     
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#ffffff" id="theme-meta">
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     
     <style>
-        :root { 
-            --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0;
-            --msg-bg: rgba(255, 255, 255, 0.7); --accent: #6e8efb;
-            --time: rgba(0, 0, 0, 0.4);
-        }
-        body.dark-mode {
-            --bg: #18191a; --text: #ffffff; --border: #2c2d2e;
-            --msg-bg: rgba(40, 40, 42, 0.85); --time: rgba(255, 255, 255, 0.5);
-        }
+        :root { --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0; --msg-bg: rgba(255, 255, 255, 0.7); --accent: #6e8efb; }
+        body.dark-mode { --bg: #18191a; --text: #ffffff; --border: #2c2d2e; --msg-bg: rgba(40, 40, 42, 0.85); }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -31,105 +23,71 @@
             margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        @keyframes gradientBG {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
+        @keyframes gradientBG { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
 
-        .header-area {
-            padding: calc(env(safe-area-inset-top) + 10px) 20px 10px;
-            background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100;
-        }
+        .header-area { padding: calc(env(safe-area-inset-top) + 10px) 20px 10px; background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100; }
+        #messages { flex: 1; overflow-y: auto; padding: 20px 20px 120px; display: flex; flex-direction: column; gap: 12px; -webkit-overflow-scrolling: touch; }
 
-        #messages {
-            flex: 1; overflow-y: auto; padding: 20px 20px 150px; 
-            display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch;
-        }
+        .footer-area { position: fixed; bottom: 0; width: 100%; background: var(--bg); border-top: 1px solid var(--border); padding: 12px 15px; padding-bottom: calc(12px + env(safe-area-inset-bottom)); display: flex; gap: 8px; align-items: center; z-index: 200; box-sizing: border-box; }
 
-        .footer-area {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: var(--bg); border-top: 1px solid var(--border);
-            padding: 12px 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom));
-            display: flex; gap: 8px; align-items: center; z-index: 200;
-        }
-
-        .message-row { display: flex; width: 100%; margin-bottom: 5px; position: relative; }
+        .message-row { display: flex; width: 100%; margin-bottom: 5px; }
         .message-row.me { justify-content: flex-end; }
         
-        .msg {
-            max-width: 85%; padding: 12px 16px; border-radius: 18px;
-            background: var(--msg-bg); backdrop-filter: blur(12px);
-            color: var(--text); box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            position: relative;
-        }
+        .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; background: var(--msg-bg); backdrop-filter: blur(12px); color: var(--text); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .chat-img { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; }
 
-        .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px; }
-        
-        .reactions { margin-top: 10px; display: flex; gap: 5px; flex-wrap: wrap; }
-        .reaction-btn { 
-            background: rgba(0,0,0,0.05); border: none; border-radius: 12px; 
-            padding: 4px 10px; font-size: 14px; cursor: pointer; color: var(--text);
-            transition: transform 0.1s;
-        }
-        .reaction-btn:active { transform: scale(1.3); }
+        .reactions { margin-top: 8px; display: flex; gap: 4px; }
+        .reaction-btn { background: rgba(0,0,0,0.05); border: none; border-radius: 10px; padding: 3px 8px; font-size: 13px; cursor: pointer; color: var(--text); }
 
-        .chat-img {
-            max-width: 100%; max-height: 300px; border-radius: 12px;
-            margin-top: 8px; display: block; cursor: pointer;
-        }
-
-        #username { width: 90px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
-        #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; }
-        
-        .btn-icon { background: none; border: none; font-size: 22px; cursor: pointer; padding: 5px; }
-        .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
-        
-        .top-controls { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 15px; z-index: 300; }
+        #username { width: 80px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        #content { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+        .btn-send { background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 20px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="top-controls">
-        <button style="background:none; border:none; font-size:22px; cursor:pointer;" onclick="toggleNightMode()">🌙</button>
-    </div>
-
     <header class="header-area">
-        <h1 style="font-size: 1.1rem; margin: 5px 0; color: var(--text);">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Name" oninput="saveName(this.value)">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h1 style="font-size: 1rem; margin: 0; color: var(--text);">Secret Board</h1>
+            <button onclick="toggleNightMode()" style="background:none; border:none; font-size:18px;">🌙</button>
+        </div>
+        <input type="text" id="username" placeholder="Name" oninput="localStorage.setItem('savedName', this.value)" style="margin-top:8px;">
     </header>
 
     <main id="messages"></main>
 
     <footer class="footer-area">
         <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
-        <button class="btn-icon" onclick="document.getElementById('file-input').click()">➕</button>
+        <button onclick="document.getElementById('file-input').click()" style="background:none; border:none; font-size:20px;">➕</button>
         <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
     <script>
+        // Desktop fix: Ensure Supabase is defined before calling
         const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
         const SB_KEY = 'sb_publishable_29_UPCY6LIOTBTn_UwNrsA_a4uVSxeq';
-        const client = supabase.createClient(SB_URL, SB_KEY);
+        let client;
+
+        try {
+            client = supabase.createClient(SB_URL, SB_KEY);
+        } catch(e) {
+            console.error("Supabase failed to load", e);
+        }
 
         let lastFingerprint = "";
         const EMOJIS = ['❤️', '😂', '🔥'];
 
-        function saveName(val) { localStorage.setItem('savedName', val); }
-        function loadName() { 
-            const n = localStorage.getItem('savedName');
-            if(n) document.getElementById('username').value = n;
-        }
-
-        function getUsernameColor(str) {
-            let hash = 0; const name = str || "Anon";
+        function getUsernameColor(name) {
+            let hash = 0;
             for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
+            return `hsl(${Math.abs(hash) % 360}, 70%, 50%)`;
         }
 
         async function fetchData() {
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(30);
+            if (!client) return;
+            // PERFORMANCE: Limit to 20 messages to keep speed high
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(20);
             if (error) return;
             
             const fingerprint = JSON.stringify(data);
@@ -137,29 +95,25 @@
             lastFingerprint = fingerprint;
             
             const container = document.getElementById('messages');
-            const currentUser = document.getElementById('username').value;
+            const currentUser = localStorage.getItem('savedName') || "";
             
             container.innerHTML = data.reverse().map(m => {
                 const isMe = m.username === currentUser;
-                const color = getUsernameColor(m.username);
-                const counts = m.reactions || {};
-                const imgTag = m.image_data ? `<img src="${m.image_data}" class="chat-img" onclick="window.open(this.src)">` : "";
-                
-                const reactionHTML = EMOJIS.map(e => `
-                    <button class="reaction-btn" onclick="addReaction('${m.id}', '${e}')">
-                        ${e} ${counts[e] || 0}
-                    </button>
+                const userColor = getUsernameColor(m.username || "Anon");
+                const reactions = m.reactions || {};
+                const img = m.image_data ? `<img src="${m.image_data}" class="chat-img">` : "";
+
+                const reactionBtns = EMOJIS.map(e => `
+                    <button class="reaction-btn" onclick="addReaction('${m.id}', '${e}')">${e} ${reactions[e] || 0}</button>
                 `).join('');
 
                 return `
-                    <div class="message-row ${isMe ? 'me' : 'them'}">
-                        <div class="msg" style="border-left: 5px solid ${color}">
-                            <div class="msg-header">
-                                <strong style="font-size: 0.75rem; color: ${color}; font-weight: 600;">${m.username}</strong>
-                            </div>
-                            <div style="word-break: break-word;">${m.content || ''}</div>
-                            ${imgTag}
-                            <div class="reactions">${reactionHTML}</div>
+                    <div class="message-row ${isMe ? 'me' : ''}">
+                        <div class="msg" style="border-left: 4px solid ${userColor}">
+                            <strong style="font-size: 10px; color: ${userColor}">${m.username}</strong>
+                            <div style="word-break: break-word; margin: 4px 0;">${m.content || ""}</div>
+                            ${img}
+                            <div class="reactions">${reactionBtns}</div>
                         </div>
                     </div>
                 `;
@@ -177,10 +131,11 @@
         }
 
         async function handleFileUpload(input) {
-            if (!input.files?.[0]) return;
+            if (!input.files[0]) return;
             const reader = new FileReader();
             reader.onload = async (e) => {
                 const u = document.getElementById('username').value || "Anon";
+                // Note: Large images can cause lag in Supabase. Try smaller files.
                 await client.from('messages').insert([{ username: u, image_data: e.target.result, content: "", reactions: {} }]);
                 fetchData();
             };
@@ -189,22 +144,21 @@
 
         async function addReaction(msgId, emoji) {
             const { data } = await client.from('messages').select('reactions').eq('id', msgId).single();
-            let reactions = data.reactions || {};
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
-            await client.from('messages').update({ reactions }).eq('id', msgId);
+            let reacts = data.reactions || {};
+            reacts[emoji] = (reacts[emoji] || 0) + 1;
+            await client.from('messages').update({ reactions: reacts }).eq('id', msgId);
             fetchData();
         }
 
         function toggleNightMode() {
             document.body.classList.toggle('dark-mode');
-            const isDark = document.body.classList.contains('dark-mode');
-            localStorage.setItem('theme', isDark ? 'dark' : 'light');
         }
 
-        loadName();
-        if (localStorage.getItem('theme') === 'dark') toggleNightMode();
+        // Init
+        const saved = localStorage.getItem('savedName');
+        if(saved) document.getElementById('username').value = saved;
         fetchData();
-        setInterval(fetchData, 3000);
+        setInterval(fetchData, 4000); // Slightly slower interval to prevent desktop freezing
     </script>
 </body>
 </html>
