@@ -4,11 +4,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secret Board Pro</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#ffffff" id="theme-meta">
+    
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    
     <style>
-        :root { --bg: #ffffff; --text: #1a1a1b; --msg-bg: rgba(255, 255, 255, 0.85); --accent: #6e8efb; }
-        body.dark-mode { --bg: #18191a; --text: #ffffff; --msg-bg: rgba(45, 45, 48, 0.9); }
+        :root { 
+            --bg: #ffffff; --text: #1a1a1b; --border: #e0e0e0;
+            --msg-bg: rgba(255, 255, 255, 0.7); --accent: #6e8efb;
+            --time: rgba(0, 0, 0, 0.4);
+        }
+        body.dark-mode {
+            --bg: #18191a; --text: #ffffff; --border: #2c2d2e;
+            --msg-bg: rgba(40, 40, 42, 0.85); --time: rgba(255, 255, 255, 0.5);
+        }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -17,38 +30,28 @@
             animation: gradientBG 15s ease infinite;
             margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
-        @keyframes gradientBG { 0% {background-position:0% 50%} 50% {background-position:100% 50%} 100% {background-position:0% 50%} }
 
-        #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 100px; }
-        
-        .msg { 
-            max-width: 75%; padding: 12px 16px; border-radius: 18px; background: var(--msg-bg); 
-            backdrop-filter: blur(10px); color: var(--text); align-self: flex-start;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        .msg.me { align-self: flex-end; border-bottom-right-radius: 4px; background: var(--accent); color: white; }
-        
-        .reactions { margin-top: 10px; display: flex; gap: 6px; }
-        .react-btn { 
-            border: none; background: rgba(0,0,0,0.06); border-radius: 20px; 
-            padding: 4px 10px; cursor: pointer; font-size: 14px; transition: transform 0.1s;
+
+        .header-area {
+            padding: calc(env(safe-area-inset-top) + 10px) 20px 10px;
+            background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100;
         }
-        .msg.me .react-btn { background: rgba(255,255,255,0.2); color: white; }
-        .react-btn:active { transform: scale(1.3); }
 
-        .footer { 
-            position: fixed; bottom: 0; width: 100%; background: var(--bg); 
-            padding: 15px; display: flex; gap: 10px; box-sizing: border-box;
-            border-top: 1px solid rgba(0,0,0,0.1);
+        #messages {
+            flex: 1; overflow-y: auto; padding: 20px 20px 150px; 
+            display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch;
         }
-        input { padding: 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; background: var(--bg); color: var(--text); }
-    </style>
-</head>
-<body>
 
-    <main id="messages"></main>
+        .footer-area {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--bg); border-top: 1px solid var(--border);
+            padding: 12px 15px; padding-bottom: calc(15px + env(safe-area-inset-bottom));
+            display: flex; gap: 8px; align-items: center; z-index: 200;
+        }
 
-    <footer class="footer">
-        <input type="text" id="username" placeholder="Name" style="width: 70px;" oninput="localStorage.setItem('savedName', this.value)">
-        <input type="text" id="content" placeholder="Message..." style="flex:1;" onkeypress="if(event.key==='Enter') handleSend()">
-        <button onclick="handleSend()" style="background
+        .message-row { display: flex; width: 100%; margin-bottom: 5px; position: relative; }
