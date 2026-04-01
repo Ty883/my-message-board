@@ -31,7 +31,7 @@
         .header-area {
             padding: calc(env(safe-area-inset-top) + 10px) 20px 15px;
             background: var(--bg); border-bottom: 1px solid var(--border); z-index: 100;
-            text-align: center; position: relative;
+            text-align: left; position: relative;
         }
 
         .night-toggle { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 20px; background: none; border: none; font-size: 22px; cursor: pointer; }
@@ -65,7 +65,7 @@
 
         .chat-img { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
 
-        #username { width: 100px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; margin-top: 8px; text-align: center; }
+        #username { width: 100px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; margin-top: 8px; }
         #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
     </style>
@@ -75,7 +75,7 @@
     <header class="header-area">
         <button class="night-toggle" onclick="document.body.classList.toggle('dark-mode')">🌙</button>
         <h1 style="font-size: 1.2rem; margin: 0; color: var(--text); font-weight: 600;">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Name" oninput="localStorage.setItem('savedName', this.value)">
+        <input type="text" id="username" placeholder="Your Name" oninput="localStorage.setItem('savedName', this.value)">
     </header>
 
     <main id="messages"></main>
@@ -102,7 +102,7 @@
         }
 
         async function fetchData() {
-            // Keep it to 10 messages to prevent "Statement Timeout"
+            // Optimization: Limit to 10 messages for database stability
             const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(10);
             if (error || !data) return;
             
