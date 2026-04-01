@@ -43,6 +43,12 @@
             padding-bottom: 150px;
         }
 
+        .load-more {
+            align-self: center; background: rgba(0,0,0,0.1); border: none; 
+            padding: 8px 15px; border-radius: 15px; font-size: 12px; 
+            color: var(--text); cursor: pointer; margin-bottom: 10px;
+        }
+
         .footer-area {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: var(--bg); border-top: 1px solid var(--border);
@@ -80,12 +86,14 @@
 <body>
 
     <header class="header-area">
-        <button class="night-toggle" onclick="document.body.classList.toggle('dark-mode')">🌙</button>
+        <button class="night-toggle" onclick="toggleTheme()">🌙</button>
         <h1 style="font-size: 1.2rem; margin: 0; color: var(--text); font-weight: 600;">Secret Message Board</h1>
         <input type="text" id="username" placeholder="Your Name" oninput="localStorage.setItem('savedName', this.value)">
     </header>
 
-    <main id="messages"></main>
+    <main id="messages">
+        <button class="load-more" id="loadBtn" onclick="loadMore()">Load Previous Messages</button>
+    </main>
 
     <footer class="footer-area">
         <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
@@ -100,7 +108,18 @@
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let lastFingerprint = "";
+        let limitCount = 12; // Start with 12
         const EMOJIS = ['❤️', '😂', '🔥'];
+
+        function toggleTheme() {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('nightMode', isDark ? 'on' : 'off');
+        }
+
+        function loadMore() {
+            limitCount += 10;
+            fetchData(true);
+        }
 
         function getUsernameColor(name) {
             let hash = 0;
@@ -114,18 +133,25 @@
             return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         }
 
-        async function fetchData() {
-            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(15);
+        async function fetchData(forceScroll = false) {
+            const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(limitCount);
             if (error || !data) return;
 
             const currentFp = JSON.stringify(data.map(m => m.id + JSON.stringify(m.reactions || {})));
-            if (currentFp === lastFingerprint) return;
+            if (currentFp === lastFingerprint && !forceScroll) return;
+            
+            const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 100);
             lastFingerprint = currentFp;
             
             const container = document.getElementById('messages');
             const currentUser = localStorage.getItem('savedName') || "";
             
-            container.innerHTML = data.reverse().map(m => {
+            // Keep the Load More button
+            const loadBtn = document.getElementById('loadBtn');
+            container.innerHTML = '';
+            container.appendChild(loadBtn);
+
+            data.reverse().forEach(m => {
                 const isMe = m.username === currentUser;
                 const color = getUsernameColor(m.username);
                 const reacts = m.reactions || {};
@@ -138,21 +164,25 @@
                     </button>
                 `).join('');
 
-                return `
-                    <div class="message-row ${isMe ? 'me' : ''}">
-                        <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
-                            <div class="msg-header">
-                                <strong style="font-size: 0.75rem; color: ${isMe ? 'white' : color}; opacity: 0.8;">${m.username || 'Anon'}</strong>
-                                <span class="timestamp">${time}</span>
-                            </div>
-                            <div style="word-break: break-word; margin: 4px 0;">${m.content || ''}</div>
-                            ${img}
-                            <div class="reactions">${rHtml}</div>
+                const div = document.createElement('div');
+                div.className = `message-row ${isMe ? 'me' : ''}`;
+                div.innerHTML = `
+                    <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
+                        <div class="msg-header">
+                            <strong style="font-size: 0.75rem; color: ${isMe ? 'white' : color}; opacity: 0.8;">${m.username || 'Anon'}</strong>
+                            <span class="timestamp">${time}</span>
                         </div>
+                        <div style="word-break: break-word; margin: 4px 0;">${m.content || ''}</div>
+                        ${img}
+                        <div class="reactions">${rHtml}</div>
                     </div>
                 `;
-            }).join('');
-            container.scrollTop = container.scrollHeight;
+                container.appendChild(div);
+            });
+
+            if (forceScroll || isAtBottom) {
+                container.scrollTop = container.scrollHeight;
+            }
         }
 
         async function handleSend() {
@@ -161,7 +191,7 @@
             if (!c.trim()) return;
             document.getElementById('content').value = '';
             await client.from('messages').insert([{ username: u, content: c, reactions: { '❤️': 0, '😂': 0, '🔥': 0 } }]);
-            fetchData();
+            fetchData(true);
         }
 
         async function handleFileUpload(input) {
@@ -180,7 +210,7 @@
                     const compressed = canvas.toDataURL('image/jpeg', 0.6); 
                     const u = document.getElementById('username').value || "Anon";
                     await client.from('messages').insert([{ username: u, image_data: compressed, content: "", reactions: { '❤️': 0, '😂': 0, '🔥': 0 } }]);
-                    fetchData();
+                    fetchData(true);
                 };
                 img.src = e.target.result;
             };
@@ -196,9 +226,14 @@
             fetchData();
         }
 
+        // INIT
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
-        fetchData();
-        setInterval(fetchData, 4000);
+        if (localStorage.getItem('nightMode') === 'on') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        fetchData(true);
+        setInterval(() => fetchData(false), 4000);
     </script>
 </body>
 </html>
