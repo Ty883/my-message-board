@@ -103,11 +103,11 @@
         }
 
         async function fetchData(forceScroll = false) {
-            let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
+            let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(50);
 
-            // Fetch 'tyla' messages OR anything without a room tag (the old messages)
+            // SPECIAL LOGIC: TYLA room pulls 'tyla', 'general', and 'null' values
             if (activeRoom === 'tyla') {
-                query = query.or(`room_id.eq.tyla,room_id.is.null`);
+                query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null`);
             } else {
                 query = query.eq('room_id', activeRoom);
             }
