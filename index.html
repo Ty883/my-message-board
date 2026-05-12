@@ -75,15 +75,22 @@
         let lastFp = "";
         let unread = 0;
         let activeRoom = localStorage.getItem('currentRoom') || 'tyla';
-        let mainInterval = null; // Single controller for the timer
+        let mainInterval = null;
 
         document.getElementById('room-select').value = activeRoom;
 
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
 
         async function requestNotifs() {
+            if (!navigator.setAppBadge) {
+                alert("Badging is only supported when this app is added to your Home Screen.");
+                return;
+            }
             const permission = await Notification.requestPermission();
-            if (permission === 'granted') document.getElementById('notif-req').style.display = 'none';
+            if (permission === 'granted') {
+                document.getElementById('notif-req').style.display = 'none';
+                navigator.setAppBadge(0).catch(() => {});
+            }
         }
 
         function toggleTheme() {
@@ -162,28 +169,23 @@
             if (forceScroll) container.scrollTop = container.scrollHeight;
         }
 
-        // --- THE SMART TIMER LOGIC ---
         function startSync() {
             if (mainInterval) clearInterval(mainInterval);
-            // Check every 3 seconds while active
             mainInterval = setInterval(() => fetchData(false), 3000);
         }
 
         window.addEventListener('focus', () => {
             unread = 0;
             if (navigator.clearAppBadge) navigator.clearAppBadge().catch(()=>{});
-            startSync(); // Ensure timer is running at full speed
+            startSync();
         });
 
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'visible') {
                 startSync();
             } else {
-                // When hidden, slow down the timer to every 10 seconds to keep the connection clean
-                // but still allow badges to trigger for a few minutes.
                 clearInterval(mainInterval);
                 mainInterval = setInterval(() => fetchData(false), 10000);
-                // Kill the background timer entirely after 5 minutes to save battery
                 setTimeout(() => clearInterval(mainInterval), 300000);
             }
         });
@@ -222,9 +224,16 @@
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
         if (localStorage.getItem('nightMode') === 'on') document.body.classList.add('dark-mode');
         
+        // Hide badge button if already granted or not supported
+        if (Notification.permission === 'granted' || !navigator.setAppBadge) {
+            document.getElementById('notif-req').style.display = 'none';
+        }
+
         const initCache = localStorage.getItem('cache_' + activeRoom);
         if (initCache) renderMessages(JSON.parse(initCache), true);
         
         fetchData(true);
-        startSync(); // Kick off the single timer
+        startSync(); 
     </script>
+</body>
+</html>
