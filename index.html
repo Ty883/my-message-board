@@ -206,6 +206,19 @@
 
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
         if (localStorage.getItem('nightMode') === 'on') document.body.classList.add('dark-mode');
+
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        // When you minimize the app, we keep checking for 30 seconds
+        let count = 0;
+        const interval = setInterval(async () => {
+            await fetchData(false);
+            count++;
+            if (count > 6) clearInterval(interval); // Stop after 30ish seconds to save battery
+        }, 5000);
+    }
+});
+
         
         // Initial load using cache first
         const initCache = localStorage.getItem('cache_' + activeRoom);
