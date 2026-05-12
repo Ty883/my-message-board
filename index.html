@@ -41,6 +41,13 @@
         }
 
         .night-toggle { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 20px; background: none; border: none; font-size: 22px; cursor: pointer; }
+        
+        /* New Notification Toggle */
+        .notif-btn { 
+            background: var(--accent); color: white; border: none; 
+            padding: 4px 10px; border-radius: 12px; font-size: 11px; 
+            font-weight: 600; cursor: pointer; margin-top: 5px;
+        }
 
         #messages {
             flex: 1; overflow-y: auto; padding: 20px; 
@@ -84,7 +91,10 @@
     <header class="header-area">
         <button class="night-toggle" onclick="toggleTheme()">🌙</button>
         <h1 style="font-size: 1.2rem; margin: 0; color: var(--text); font-weight: 600;">Secret Message Board</h1>
-        <input type="text" id="username" placeholder="Your Name" oninput="localStorage.setItem('savedName', this.value)">
+        <div style="display: flex; gap: 10px; align-items: center;">
+            <input type="text" id="username" placeholder="Your Name" oninput="localStorage.setItem('savedName', this.value)">
+            <button id="notif-req" class="notif-btn" onclick="requestNotifs()">🔔 Enable Alerts</button>
+        </div>
     </header>
 
     <main id="messages">
@@ -113,9 +123,13 @@
             localStorage.setItem('nightMode', isDark ? 'on' : 'off');
         }
 
-        function loadMore() {
-            limitCount += 10;
-            fetchData(true);
+        // REQUIRED FOR IOS BADGES
+        async function requestNotifs() {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                document.getElementById('notif-req').innerText = '🔔 Enabled';
+                document.getElementById('notif-req').style.opacity = '0.5';
+            }
         }
 
         function getUsernameColor(name) {
@@ -136,19 +150,23 @@
 
             const currentFp = JSON.stringify(data.map(m => m.id));
             
-            // Badge Logic: If data changed and we aren't focused, increase badge
+            // Badge Logic
             if (lastFingerprint !== "" && currentFp !== lastFingerprint) {
-                if (document.hidden || !document.hasFocus()) {
+                const latestMsg = data[0];
+                const currentUser = localStorage.getItem('savedName') || "";
+                
+                // Only badge if message isn't from us and app is in background
+                if (latestMsg.username !== currentUser && (document.hidden || !document.hasFocus())) {
                     unreadCount++;
-                    if (navigator.setAppBadge) navigator.setAppBadge(unreadCount);
+                    if (navigator.setAppBadge) {
+                        navigator.setAppBadge(unreadCount).catch(e => console.log("Badge blocked:", e));
+                    }
                 }
             }
 
             if (currentFp === lastFingerprint && !forceScroll) return;
             
-            const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 150);
             lastFingerprint = currentFp;
-            
             const currentUser = localStorage.getItem('savedName') || "";
             const loadBtn = document.getElementById('loadBtn');
             
@@ -176,12 +194,9 @@
                 container.appendChild(div);
             });
 
-            if (forceScroll || isAtBottom) {
-                container.scrollTop = container.scrollHeight;
-            }
+            if (forceScroll) container.scrollTop = container.scrollHeight;
         }
 
-        // Clear badge when user opens the app
         window.addEventListener('focus', () => {
             unreadCount = 0;
             if (navigator.clearAppBadge) navigator.clearAppBadge();
@@ -220,9 +235,7 @@
         }
 
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
-        if (localStorage.getItem('nightMode') === 'on') {
-            document.body.classList.add('dark-mode');
-        }
+        if (localStorage.getItem('nightMode') === 'on') document.body.classList.add('dark-mode');
         
         fetchData(true);
         setInterval(() => fetchData(false), 4000);
