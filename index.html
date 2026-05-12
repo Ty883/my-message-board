@@ -45,7 +45,6 @@
     <header class="header-area">
         <button class="night-toggle" onclick="toggleTheme()">🌙</button>
         
-        <!-- Updated Custom Rooms -->
         <select id="room-select" onchange="changeRoom()">
             <option value="tyla">✨ TYLA</option>
             <option value="mom">❤️ MOM</option>
@@ -104,11 +103,16 @@
         }
 
         async function fetchData(forceScroll = false) {
-            const { data, error } = await client.from('messages')
-                .select('*')
-                .eq('room_id', activeRoom) 
-                .order('created_at', { ascending: false })
-                .limit(20);
+            let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(30);
+
+            // SPECIAL LOGIC: If room is TYLA, show 'tyla' room AND all old messages (null)
+            if (activeRoom === 'tyla') {
+                query = query.or(`room_id.eq.tyla,room_id.is.null`);
+            } else {
+                query = query.eq('room_id', activeRoom);
+            }
+
+            const { data, error } = await query;
 
             if (error || !data) return;
             const currentFp = JSON.stringify(data.map(m => m.id));
