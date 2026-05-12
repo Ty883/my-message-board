@@ -103,9 +103,9 @@
         }
 
         async function fetchData(forceScroll = false) {
-            let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(30);
+            let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
 
-            // SPECIAL LOGIC: If room is TYLA, show 'tyla' room AND all old messages (null)
+            // Fetch 'tyla' messages OR anything without a room tag (the old messages)
             if (activeRoom === 'tyla') {
                 query = query.or(`room_id.eq.tyla,room_id.is.null`);
             } else {
