@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secret Board Pro</title>
     
+    <!-- Black icon with blue message bubbles -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8943/8943377.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8943/8943377.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,13 +75,6 @@
         .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; margin-bottom: 4px; }
         .timestamp { font-size: 0.65rem; color: var(--time); font-weight: 400; }
 
-        .reactions { margin-top: 10px; display: flex; gap: 6px; }
-        .reaction-btn { 
-            background: rgba(0,0,0,0.06); border: none; border-radius: 12px; 
-            padding: 5px 10px; font-size: 14px; cursor: pointer; color: var(--text);
-        }
-        .me .reaction-btn { background: rgba(255,255,255,0.2); color: white; }
-
         .chat-img { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
 
         #username { width: 100px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; margin-top: 8px; }
@@ -115,7 +109,6 @@
         const container = document.getElementById('messages');
         let lastFingerprint = "";
         let limitCount = 10; 
-        const EMOJIS = ['❤️', '😂', '🔥'];
 
         function toggleTheme() {
             const isDark = document.body.classList.toggle('dark-mode');
@@ -134,16 +127,22 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
+        // UPDATED: Now includes Month, Day, and Time
         function formatTime(isoStr) {
             const date = new Date(isoStr);
-            return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            return date.toLocaleTimeString([], { 
+                month: 'short', 
+                day: 'numeric', 
+                hour: 'numeric', 
+                minute: '2-digit' 
+            });
         }
 
         async function fetchData(forceScroll = false) {
             const { data, error } = await client.from('messages').select('*').order('created_at', { ascending: false }).limit(limitCount);
             if (error || !data) return;
 
-            const currentFp = JSON.stringify(data.map(m => m.id + JSON.stringify(m.reactions || {})));
+            const currentFp = JSON.stringify(data.map(m => m.id));
             if (currentFp === lastFingerprint && !forceScroll) return;
             
             const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 150);
@@ -158,16 +157,9 @@
             data.reverse().forEach(m => {
                 const isMe = m.username === currentUser;
                 const color = getUsernameColor(m.username);
-                const reacts = m.reactions || {};
                 const img = m.image_data ? `<img src="${m.image_data}" class="chat-img">` : "";
                 const time = formatTime(m.created_at);
                 
-                const rHtml = EMOJIS.map(e => `
-                    <button class="reaction-btn" onclick="addReaction('${m.id}', '${e}')">
-                        ${e} ${reacts[e] || 0}
-                    </button>
-                `).join('');
-
                 const div = document.createElement('div');
                 div.className = `message-row ${isMe ? 'me' : ''}`;
                 div.innerHTML = `
@@ -178,7 +170,6 @@
                         </div>
                         <div style="word-break: break-word; margin: 4px 0;">${m.content || ''}</div>
                         ${img}
-                        <div class="reactions">${rHtml}</div>
                     </div>
                 `;
                 container.appendChild(div);
@@ -194,7 +185,7 @@
             const c = document.getElementById('content').value;
             if (!c.trim()) return;
             document.getElementById('content').value = '';
-            await client.from('messages').insert([{ username: u, content: c, reactions: { '❤️': 0, '😂': 0, '🔥': 0 } }]);
+            await client.from('messages').insert([{ username: u, content: c }]);
             fetchData(true);
         }
 
@@ -213,21 +204,12 @@
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                     const compressed = canvas.toDataURL('image/jpeg', 0.6); 
                     const u = document.getElementById('username').value || "Anon";
-                    await client.from('messages').insert([{ username: u, image_data: compressed, content: "", reactions: { '❤️': 0, '😂': 0, '🔥': 0 } }]);
+                    await client.from('messages').insert([{ username: u, image_data: compressed, content: "" }]);
                     fetchData(true);
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(input.files[0]);
-        }
-
-        async function addReaction(msgId, emoji) {
-            const { data, error } = await client.from('messages').select('reactions').eq('id', msgId).single();
-            if (error) return;
-            let r = data.reactions || { '❤️': 0, '😂': 0, '🔥': 0 };
-            r[emoji] = (r[emoji] || 0) + 1;
-            await client.from('messages').update({ reactions: r }).eq('id', msgId);
-            fetchData();
         }
 
         // Initialize
