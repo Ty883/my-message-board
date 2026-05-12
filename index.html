@@ -131,7 +131,7 @@
                 if (lastFp !== "" && currentFp !== lastFp) {
                     const latest = data[0];
                     const me = localStorage.getItem('savedName') || "";
-                    if (latest.username !== me && (document.hidden || !document.hasFocus())) {
+                   if (latest.username !== me) {
                         unread++;
                         if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
                     }
