@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Secret Board Multi</title>
+    <title>Secret Board Pro</title>
     
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8943/8943377.png">
@@ -23,8 +23,9 @@
         .night-toggle { position: absolute; top: calc(env(safe-area-inset-top) + 15px); right: 20px; background: none; border: none; font-size: 22px; cursor: pointer; }
         
         #room-select { 
-            background: var(--border); border: none; padding: 5px 10px; border-radius: 8px; 
-            font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px;
+            background: var(--border); border: none; padding: 8px 12px; border-radius: 12px; 
+            font-family: inherit; font-size: 15px; font-weight: 600; color: var(--text); 
+            margin-bottom: 10px; width: 180px; appearance: none; -webkit-appearance: none;
         }
 
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; padding-bottom: 150px; }
@@ -34,7 +35,7 @@
         .message-row { display: flex; width: 100%; }
         .message-row.me { justify-content: flex-end; }
         
-        #username { width: 80px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
+        #username { width: 80px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
         #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: 600; }
     </style>
@@ -44,17 +45,17 @@
     <header class="header-area">
         <button class="night-toggle" onclick="toggleTheme()">🌙</button>
         
-        <!-- Room Selector -->
+        <!-- Updated Custom Rooms -->
         <select id="room-select" onchange="changeRoom()">
-            <option value="general">🏠 General Chat</option>
-            <option value="piano">🎹 Piano Lessons</option>
-            <option value="rangers">⛺ Rangers / Guides</option>
-            <option value="secret">🕵️ Top Secret</option>
+            <option value="tyla">✨ TYLA</option>
+            <option value="mom">❤️ MOM</option>
+            <option value="anna">👤 JUST ANNA</option>
+            <option value="luke">👤 JUST LUKE</option>
         </select>
 
         <div style="display: flex; gap: 10px; align-items: center;">
             <input type="text" id="username" placeholder="Name" oninput="localStorage.setItem('savedName', this.value)">
-            <button id="notif-req" style="font-size: 11px; background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 10px; padding: 2px 8px;" onclick="requestNotifs()">🔔 Enable Badge</button>
+            <button id="notif-req" style="font-size: 11px; background: none; border: 1px solid var(--accent); color: var(--accent); border-radius: 10px; padding: 4px 10px;" onclick="requestNotifs()">🔔 Enable Badge</button>
         </div>
     </header>
 
@@ -74,7 +75,7 @@
 
         let lastFp = "";
         let unread = 0;
-        let activeRoom = localStorage.getItem('currentRoom') || 'general';
+        let activeRoom = localStorage.getItem('currentRoom') || 'tyla';
         document.getElementById('room-select').value = activeRoom;
 
         if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
@@ -92,7 +93,7 @@
         function changeRoom() {
             activeRoom = document.getElementById('room-select').value;
             localStorage.setItem('currentRoom', activeRoom);
-            fetchData(true); // Force reload messages for new room
+            fetchData(true); 
         }
 
         function getUsernameColor(name) {
@@ -103,7 +104,6 @@
         }
 
         async function fetchData(forceScroll = false) {
-            // Filter by activeRoom!
             const { data, error } = await client.from('messages')
                 .select('*')
                 .eq('room_id', activeRoom) 
@@ -157,7 +157,6 @@
             const c = document.getElementById('content').value;
             if (!c.trim()) return;
             document.getElementById('content').value = '';
-            // Insert with room_id!
             await client.from('messages').insert([{ username: u, content: c, room_id: activeRoom }]);
             fetchData(true);
         }
@@ -175,7 +174,6 @@
                     canvas.height = img.height * scale;
                     canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
                     const compressed = canvas.toDataURL('image/jpeg', 0.6);
-                    // Insert with room_id!
                     await client.from('messages').insert([{ username: document.getElementById('username').value || "Anon", image_data: compressed, content: "", room_id: activeRoom }]);
                     fetchData(true);
                 };
