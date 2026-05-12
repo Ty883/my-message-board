@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Secret Board Pro</title>
     
-    <!-- Black icon with blue message bubbles -->
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/8943/8943377.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/8943/8943377.png">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -74,9 +73,7 @@
 
         .msg-header { display: flex; justify-content: space-between; align-items: baseline; gap: 15px; margin-bottom: 4px; }
         .timestamp { font-size: 0.65rem; color: var(--time); font-weight: 400; }
-
         .chat-img { max-width: 100%; border-radius: 12px; margin-top: 8px; display: block; }
-
         #username { width: 100px; padding: 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; margin-top: 8px; }
         #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 600; }
@@ -109,6 +106,7 @@
         const container = document.getElementById('messages');
         let lastFingerprint = "";
         let limitCount = 10; 
+        let unreadCount = 0;
 
         function toggleTheme() {
             const isDark = document.body.classList.toggle('dark-mode');
@@ -127,15 +125,9 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
-        // UPDATED: Now includes Month, Day, and Time
         function formatTime(isoStr) {
             const date = new Date(isoStr);
-            return date.toLocaleTimeString([], { 
-                month: 'short', 
-                day: 'numeric', 
-                hour: 'numeric', 
-                minute: '2-digit' 
-            });
+            return date.toLocaleTimeString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
         }
 
         async function fetchData(forceScroll = false) {
@@ -143,6 +135,15 @@
             if (error || !data) return;
 
             const currentFp = JSON.stringify(data.map(m => m.id));
+            
+            // Badge Logic: If data changed and we aren't focused, increase badge
+            if (lastFingerprint !== "" && currentFp !== lastFingerprint) {
+                if (document.hidden || !document.hasFocus()) {
+                    unreadCount++;
+                    if (navigator.setAppBadge) navigator.setAppBadge(unreadCount);
+                }
+            }
+
             if (currentFp === lastFingerprint && !forceScroll) return;
             
             const isAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 150);
@@ -180,6 +181,12 @@
             }
         }
 
+        // Clear badge when user opens the app
+        window.addEventListener('focus', () => {
+            unreadCount = 0;
+            if (navigator.clearAppBadge) navigator.clearAppBadge();
+        });
+
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
             const c = document.getElementById('content').value;
@@ -212,7 +219,6 @@
             reader.readAsDataURL(input.files[0]);
         }
 
-        // Initialize
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
         if (localStorage.getItem('nightMode') === 'on') {
             document.body.classList.add('dark-mode');
