@@ -79,7 +79,6 @@
         let activeRoom = localStorage.getItem('currentRoom') || 'tyla';
         let mainInterval = null;
         
-        // Pagination Variables
         let currentLimit = 40; 
         let hasMoreMessages = true;
 
@@ -108,7 +107,7 @@
             activeRoom = document.getElementById('room-select').value;
             localStorage.setItem('currentRoom', activeRoom);
             lastFp = ""; 
-            currentLimit = 40; // Reset layout depth limit on room switch
+            currentLimit = 40; 
             hasMoreMessages = true;
 
             const cached = localStorage.getItem('cache_' + activeRoom);
@@ -127,7 +126,6 @@
             try {
                 let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
                 
-                // TYLA strictly handles legacy archives, NOT new rooms like Nana
                 if (activeRoom === 'tyla') {
                     query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
                 } else {
@@ -138,6 +136,7 @@
                 if (error || !data) return;
 
                 hasMoreMessages = data.length === currentLimit;
+
                 const currentFp = JSON.stringify(data.map(m => m.id));
 
                 if (lastFp !== "" && currentFp !== lastFp) {
@@ -159,7 +158,6 @@
         }
 
         function loadPrevious() {
-            // Keep the execution thread lightweight by appending to limits rather than over-fetching
             currentLimit += 40; 
             fetchData(false);
         }
@@ -167,13 +165,11 @@
         function renderMessages(data, forceScroll) {
             const container = document.getElementById('messages');
             
-            // Track scroll position before rendering older assets
             const oldScrollHeight = container.scrollHeight;
             const oldScrollTop = container.scrollTop;
 
             container.innerHTML = '';
 
-            // Render 'Load More' button at the top if history persists
             if (hasMoreMessages) {
                 const btnDiv = document.createElement('div');
                 btnDiv.className = 'load-more-container';
@@ -190,7 +186,7 @@
                     <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
                         <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:4px; gap: 15px;">
                             <b style="color:${color}">${m.username || 'Anon'}</b>
-                            <span style="color:var(--time)">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                            <span style="color:var(--time)">${new Date(m.created_at).toLocaleDateString([], {month:'short', day:'numeric'})}, ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
                         <div style="word-break: break-word;">${m.content || ''}</div>
                         ${m.image_data ? `<img src="${m.image_data}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;">` : ""}
@@ -202,7 +198,6 @@
             if (forceScroll) {
                 container.scrollTop = container.scrollHeight;
             } else {
-                // Lock view relative to history viewport frame step
                 container.scrollTop = oldScrollTop + (container.scrollHeight - oldScrollHeight);
             }
         }
