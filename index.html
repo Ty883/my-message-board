@@ -38,6 +38,9 @@
         #username { width: 80px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; }
         #content { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 16px; outline: none; }
         .btn-send { background: var(--accent); color: white; border: none; padding: 10px 18px; border-radius: 20px; font-weight: 600; }
+
+        .load-more-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; }
+        .btn-load-more { background: var(--msg-bg); backdrop-filter: blur(5px); border: 1px solid var(--border); color: var(--text); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,8 +51,7 @@
         <select id="room-select" onchange="changeRoom()">
             <option value="tyla">✨ TYLA</option>
             <option value="mom">❤️ MOM</option>
-            <option value="anna">👤 JUST ANNA</option>
-            <option value="luke">👤 JUST LUKE</option>
+            <option value="nana">👵 NANA</option>
         </select>
 
         <div style="display: flex; gap: 10px; align-items: center;">
@@ -76,6 +78,10 @@
         let unread = 0;
         let activeRoom = localStorage.getItem('currentRoom') || 'tyla';
         let mainInterval = null;
+        
+        // Pagination Variables
+        let currentLimit = 40; 
+        let hasMoreMessages = true;
 
         document.getElementById('room-select').value = activeRoom;
 
@@ -102,6 +108,9 @@
             activeRoom = document.getElementById('room-select').value;
             localStorage.setItem('currentRoom', activeRoom);
             lastFp = ""; 
+            currentLimit = 40; // Reset layout depth limit on room switch
+            hasMoreMessages = true;
+
             const cached = localStorage.getItem('cache_' + activeRoom);
             if (cached) renderMessages(JSON.parse(cached), true);
             fetchData(true); 
@@ -116,9 +125,12 @@
 
         async function fetchData(forceScroll = false) {
             try {
-                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(40);
+                // Query uses currentLimit dynamic value
+                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
+                
+                // TYLA now acts as the master archive container room
                 if (activeRoom === 'tyla') {
-                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null`);
+                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
                 } else {
                     query = query.eq('room_id', activeRoom);
                 }
@@ -126,12 +138,15 @@
                 const { data, error } = await query;
                 if (error || !data) return;
 
+                // If query returns fewer rows than the limit, we hit the bottom of the table
+                hasMoreMessages = data.length === currentLimit;
+
                 const currentFp = JSON.stringify(data.map(m => m.id));
 
                 if (lastFp !== "" && currentFp !== lastFp) {
                     const latest = data[0];
                     const me = localStorage.getItem('savedName') || "";
-                   if (latest.username !== me) {
+                    if (latest.username !== me) {
                         unread++;
                         if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
                     }
@@ -146,9 +161,29 @@
             }
         }
 
+        function loadPrevious() {
+            // Keep the execution thread lightweight by appending to limits rather than over-fetching
+            currentLimit += 40; 
+            fetchData(false);
+        }
+
         function renderMessages(data, forceScroll) {
             const container = document.getElementById('messages');
+            
+            // Track scroll position before rendering older assets
+            const oldScrollHeight = container.scrollHeight;
+            const oldScrollTop = container.scrollTop;
+
             container.innerHTML = '';
+
+            // Render 'Load More' button at the top if history persists
+            if (hasMoreMessages) {
+                const btnDiv = document.createElement('div');
+                btnDiv.className = 'load-more-container';
+                btnDiv.innerHTML = `<button class="btn-load-more" onclick="loadPrevious()">Load Previous Messages</button>`;
+                container.appendChild(btnDiv);
+            }
+
             [...data].reverse().forEach(m => {
                 const isMe = m.username === (localStorage.getItem('savedName') || "");
                 const color = getUsernameColor(m.username);
@@ -166,7 +201,13 @@
                 `;
                 container.appendChild(div);
             });
-            if (forceScroll) container.scrollTop = container.scrollHeight;
+
+            if (forceScroll) {
+                container.scrollTop = container.scrollHeight;
+            } else {
+                // Lock view relative to history viewport frame step
+                container.scrollTop = oldScrollTop + (container.scrollHeight - oldScrollHeight);
+            }
         }
 
         function startSync() {
@@ -224,7 +265,6 @@
         document.getElementById('username').value = localStorage.getItem('savedName') || "";
         if (localStorage.getItem('nightMode') === 'on') document.body.classList.add('dark-mode');
         
-        // Hide badge button if already granted or not supported
         if (Notification.permission === 'granted' || !navigator.setAppBadge) {
             document.getElementById('notif-req').style.display = 'none';
         }
