@@ -125,10 +125,9 @@
 
         async function fetchData(forceScroll = false) {
             try {
-                // Query uses currentLimit dynamic value
                 let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
                 
-                // TYLA now acts as the master archive container room
+                // TYLA strictly handles legacy archives, NOT new rooms like Nana
                 if (activeRoom === 'tyla') {
                     query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
                 } else {
@@ -138,9 +137,7 @@
                 const { data, error } = await query;
                 if (error || !data) return;
 
-                // If query returns fewer rows than the limit, we hit the bottom of the table
                 hasMoreMessages = data.length === currentLimit;
-
                 const currentFp = JSON.stringify(data.map(m => m.id));
 
                 if (lastFp !== "" && currentFp !== lastFp) {
