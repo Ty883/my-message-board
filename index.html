@@ -30,7 +30,6 @@
 
         #messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; -webkit-overflow-scrolling: touch; padding-bottom: 150px; scroll-behavior: smooth; }
         
-        /* FIXED FOOTER BAR */
         .footer-area { 
             position: fixed; 
             bottom: 0; 
@@ -44,7 +43,7 @@
             gap: 8px; 
             align-items: center; 
             z-index: 200;
-            box-sizing: border-box; /* Forces layout to honor screen bounds */
+            box-sizing: border-box; 
             width: 100%;
         }
         
@@ -54,10 +53,9 @@
         
         #username { width: 80px; padding: 8px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; box-sizing: border-box; }
         
-        /* FIXED TEXTFIELD */
         #content { 
             flex: 1; 
-            min-width: 0; /* Prevents text field from breaking out of flex row bounds */
+            min-width: 0; 
             padding: 12px; 
             border-radius: 20px; 
             border: 1px solid var(--border); 
@@ -76,7 +74,36 @@
         .btn-icon { background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
         .recording { color: #e73c7e !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        
+        /* Layout structures for structural chat streams */
         audio { max-width: 240px; margin-top: 6px; display: block; border-radius: 8px; height: 36px; }
+        
+        /* Audio Preview Container inside the input deck */
+        #audio-preview-container {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            flex: 1;
+            min-width: 0;
+            background: var(--border);
+            padding: 4px 8px;
+            border-radius: 20px;
+        }
+        #audio-preview-container audio {
+            margin-top: 0;
+            flex: 1;
+            max-width: 100%;
+        }
+        .btn-cancel-audio {
+            background: none;
+            border: none;
+            font-size: 14px;
+            color: #e73c7e;
+            font-weight: 600;
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0 4px;
+        }
     </style>
 </head>
 <body>
@@ -87,7 +114,7 @@
         <select id="room-select" onchange="changeRoom()">
             <option value="tyla">✨ TYLA</option>
             <option value="mom">❤️ MOM</option>
-            <option value="nana">🪩 NANA</option>
+            <option value="nana">👵 NANA</option>
         </select>
 
         <div style="display: flex; gap: 10px; align-items: center;">
@@ -102,7 +129,14 @@
         <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
         <button class="btn-icon" onclick="document.getElementById('file-input').click()">➕</button>
         <button id="voice-btn" class="btn-icon" onclick="toggleRecording()">🎙️</button>
+        
         <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
+        
+        <div id="audio-preview-container">
+            <audio id="audio-preview" controls></audio>
+            <button class="btn-cancel-audio" onclick="cancelAudioDraft()">❌ Cancel</button>
+        </div>
+
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
@@ -119,9 +153,11 @@
         let currentLimit = 40; 
         let hasMoreMessages = true;
 
+        // Recording State engines
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
+        let stagedAudioBase64 = null; // Storing base64 state before upload syncs
 
         document.getElementById('room-select').value = activeRoom;
 
@@ -150,6 +186,7 @@
             lastFp = ""; 
             currentLimit = 40; 
             hasMoreMessages = true;
+            cancelAudioDraft(); // Clean draft staging buffer on area changes
 
             const cached = localStorage.getItem('cache_' + activeRoom);
             if (cached) renderMessages(JSON.parse(cached), true);
@@ -177,7 +214,6 @@
                 if (error || !data) return;
 
                 hasMoreMessages = data.length === currentLimit;
-
                 const currentFp = JSON.stringify(data.map(m => m.id));
 
                 if (lastFp !== "" && currentFp !== lastFp) {
@@ -250,8 +286,12 @@
             }
         }
 
+        // --- VOICE NOTE ENGINE ---
         async function toggleRecording() {
             const btn = document.getElementById('voice-btn');
+            const txtInput = document.getElementById('content');
+            const previewContainer = document.getElementById('audio-preview-container');
+            const previewPlayer = document.getElementById('audio-preview');
             
             if (!isRecording) {
                 try {
@@ -263,20 +303,22 @@
 
                     mediaRecorder.onstop = async () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        
+                        // Local audio component setup for preview player
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        previewPlayer.src = audioUrl;
+
+                        // Transform file track streams into database base64 payload strings
                         const reader = new FileReader();
-                        reader.onloadend = async () => {
-                            const base64Audio = reader.result;
-                            const u = document.getElementById('username').value || "Anon";
+                        reader.onloadend = () => {
+                            stagedAudioBase64 = reader.result;
                             
-                            await client.from('messages').insert([{ 
-                                username: u, 
-                                content: "🎙️ Sent a voice note", 
-                                audio_data: base64Audio, 
-                                room_id: activeRoom 
-                            }]);
-                            fetchData(true);
+                            // Swap layouts: Hide text bar, display native player preview
+                            txtInput.style.display = 'none';
+                            previewContainer.style.display = 'flex';
                         };
                         reader.readAsDataURL(audioBlob);
+                        
                         stream.getTracks().forEach(track => track.stop());
                     };
 
@@ -293,6 +335,13 @@
                 btn.classList.remove('recording');
                 btn.innerText = "🎙️";
             }
+        }
+
+        function cancelAudioDraft() {
+            stagedAudioBase64 = null;
+            document.getElementById('audio-preview').src = '';
+            document.getElementById('audio-preview-container').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
         }
 
         function startSync() {
@@ -318,6 +367,22 @@
 
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
+            
+            // Check if there is an audio note waiting in the wings
+            if (stagedAudioBase64) {
+                const audioPayload = stagedAudioBase64;
+                cancelAudioDraft(); // Clean visual structures immediately for interface speeds
+                await client.from('messages').insert([{ 
+                    username: u, 
+                    content: "🎙️ Sent a voice note", 
+                    audio_data: audioPayload, 
+                    room_id: activeRoom 
+                }]);
+                fetchData(true);
+                return;
+            }
+
+            // Otherwise, default back to normal text transmission
             const c = document.getElementById('content').value;
             if (!c.trim()) return;
             document.getElementById('content').value = '';
