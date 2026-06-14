@@ -200,39 +200,48 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
-        async function fetchData(forceScroll = false) {
-            try {
-                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
-                
-                if (activeRoom === 'tyla') {
-                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
-                } else {
-                    query = query.eq('room_id', activeRoom);
-                }
+       async function fetchData(forceScroll = false) {
+    try {
+        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
+        
+        if (activeRoom === 'tyla') {
+            query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
+        } else {
+            query = query.eq('room_id', activeRoom);
+        }
 
-                const { data, error } = await query;
-                if (error || !data) return;
+        const { data, error } = await query;
+        if (error) {
+            console.log("Supabase query error:", error);
+            return;
+        }
+        
+        // --- THE FIX: Guard against null or empty database states ---
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            hasMoreMessages = false;
+            return; 
+        }
 
-                hasMoreMessages = data.length === currentLimit;
-                const currentFp = JSON.stringify(data.map(m => m.id));
+        hasMoreMessages = data.length === currentLimit;
+        const currentFp = JSON.stringify(data.map(m => m.id));
 
-                if (lastFp !== "" && currentFp !== lastFp) {
-                    const latest = data[0];
-                    const me = localStorage.getItem('savedName') || "";
-                    if (latest.username !== me) {
-                        unread++;
-                        if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
-                    }
-                }
-
-                if (currentFp === lastFp && !forceScroll) return;
-                lastFp = currentFp;
-                localStorage.setItem('cache_' + activeRoom, JSON.stringify(data));
-                renderMessages(data, forceScroll);
-            } catch (e) {
-                console.log("Fetch failed, will retry...");
+        if (lastFp !== "" && currentFp !== lastFp) {
+            const latest = data[0];
+            const me = localStorage.getItem('savedName') || "";
+            if (latest.username !== me) {
+                unread++;
+                if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
             }
         }
+
+        if (currentFp === lastFp && !forceScroll) return;
+        lastFp = currentFp;
+        localStorage.setItem('cache_' + activeRoom, JSON.stringify(data));
+        renderMessages(data, forceScroll);
+    } catch (e) {
+        console.log("Fetch failed, will retry...", e);
+    }
+}
 
         function loadPrevious() {
             currentLimit += 40; 
