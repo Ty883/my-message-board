@@ -41,6 +41,12 @@
 
         .load-more-container { display: flex; justify-content: center; width: 100%; margin-bottom: 10px; }
         .btn-load-more { background: var(--msg-bg); backdrop-filter: blur(5px); border: 1px solid var(--border); color: var(--text); padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; }
+        
+        /* Voice note styling */
+        .btn-icon { background: none; border: none; font-size: 22px; cursor: pointer; padding: 0 4px; display: flex; align-items: center; justify-content: center; }
+        .recording { color: #e73c7e !important; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        audio { max-width: 240px; margin-top: 6px; display: block; border-radius: 8px; height: 36px; }
     </style>
 </head>
 <body>
@@ -51,7 +57,7 @@
         <select id="room-select" onchange="changeRoom()">
             <option value="tyla">✨ TYLA</option>
             <option value="mom">❤️ MOM</option>
-            <option value="nana">🪩 NANA</option>
+            <option value="nana">👵 NANA</option>
         </select>
 
         <div style="display: flex; gap: 10px; align-items: center;">
@@ -64,7 +70,10 @@
 
     <footer class="footer-area">
         <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="handleFileUpload(this)">
-        <button onclick="document.getElementById('file-input').click()" style="background:none; border:none; font-size:22px;">➕</button>
+        <button class="btn-icon" onclick="document.getElementById('file-input').click()">➕</button>
+        
+        <button id="voice-btn" class="btn-icon" onclick="toggleRecording()">🎙️</button>
+        
         <input type="text" id="content" placeholder="Message..." onkeypress="if(event.key === 'Enter') handleSend()">
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
@@ -81,6 +90,11 @@
         
         let currentLimit = 40; 
         let hasMoreMessages = true;
+
+        // Recording Global States
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
 
         document.getElementById('room-select').value = activeRoom;
 
@@ -164,7 +178,6 @@
 
         function renderMessages(data, forceScroll) {
             const container = document.getElementById('messages');
-            
             const oldScrollHeight = container.scrollHeight;
             const oldScrollTop = container.scrollTop;
 
@@ -182,6 +195,15 @@
                 const color = getUsernameColor(m.username);
                 const div = document.createElement('div');
                 div.className = `message-row ${isMe ? 'me' : ''}`;
+                
+                // Determine layout additions for structural variants (Text vs Image vs Audio)
+                let specialContent = "";
+                if (m.image_data) {
+                    specialContent = `<img src="${m.image_data}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;">`;
+                } else if (m.audio_data) {
+                    specialContent = `<audio src="${m.audio_data}" controls controlsList="nodownload"></audio>`;
+                }
+
                 div.innerHTML = `
                     <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
                         <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:4px; gap: 15px;">
@@ -189,7 +211,7 @@
                             <span style="color:var(--time)">${new Date(m.created_at).toLocaleDateString([], {month:'short', day:'numeric'})}, ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                         </div>
                         <div style="word-break: break-word;">${m.content || ''}</div>
-                        ${m.image_data ? `<img src="${m.image_data}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;">` : ""}
+                        ${specialContent}
                     </div>
                 `;
                 container.appendChild(div);
@@ -199,6 +221,58 @@
                 container.scrollTop = container.scrollHeight;
             } else {
                 container.scrollTop = oldScrollTop + (container.scrollHeight - oldScrollHeight);
+            }
+        }
+
+        // --- VOICE NOTE ENGINE ---
+        async function toggleRecording() {
+            const btn = document.getElementById('voice-btn');
+            
+            if (!isRecording) {
+                // Request mic permission and begin capturing track streams
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (e) => { audioChunks.push(e.data); };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
+                        
+                        // Convert audio data cluster to a Base64 payload string for table transport
+                        const reader = new FileReader();
+                        reader.onloadend = async () => {
+                            const base64Audio = reader.result;
+                            const u = document.getElementById('username').value || "Anon";
+                            
+                            await client.from('messages').insert([{ 
+                                username: u, 
+                                content: "🎙️ Sent a voice note", 
+                                audio_data: base64Audio, 
+                                room_id: activeRoom 
+                            }]);
+                            fetchData(true);
+                        };
+                        reader.readAsDataURL(audioBlob);
+                        
+                        // Shut down hardware tracks to clear iPhone recording indicators
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    btn.classList.add('recording');
+                    btn.innerText = "🛑";
+                } catch (err) {
+                    alert("Microphone access denied or unsupported on this device layout.");
+                }
+            } else {
+                // Terminate recording capture stack
+                mediaRecorder.stop();
+                isRecording = false;
+                btn.classList.remove('recording');
+                btn.innerText = "🎙️";
             }
         }
 
