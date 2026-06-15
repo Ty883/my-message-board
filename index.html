@@ -75,10 +75,8 @@
         .recording { color: #e73c7e !important; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
         
-        /* Layout structures for structural chat streams */
         audio { max-width: 240px; margin-top: 6px; display: block; border-radius: 8px; height: 36px; }
         
-        /* Audio Preview Container inside the input deck */
         #audio-preview-container {
             display: none;
             align-items: center;
@@ -153,11 +151,10 @@
         let currentLimit = 40; 
         let hasMoreMessages = true;
 
-        // Recording State engines
         let mediaRecorder = null;
         let audioChunks = [];
         let isRecording = false;
-        let stagedAudioBase64 = null; // Storing base64 state before upload syncs
+        let stagedAudioBase64 = null; 
 
         document.getElementById('room-select').value = activeRoom;
 
@@ -183,13 +180,22 @@
         function changeRoom() {
             activeRoom = document.getElementById('room-select').value;
             localStorage.setItem('currentRoom', activeRoom);
+            
+            // --- FIXED: Deep layout property clearing ---
             lastFp = ""; 
             currentLimit = 40; 
             hasMoreMessages = true;
-            cancelAudioDraft(); // Clean draft staging buffer on area changes
+            cancelAudioDraft(); 
+
+            // --- FIXED: Hard dump screen stream container elements ---
+            document.getElementById('messages').innerHTML = '';
 
             const cached = localStorage.getItem('cache_' + activeRoom);
-            if (cached) renderMessages(JSON.parse(cached), true);
+            if (cached) {
+                renderMessages(JSON.parse(cached), true);
+            } else {
+                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
+            }
             fetchData(true); 
         }
 
@@ -200,48 +206,47 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
-       async function fetchData(forceScroll = false) {
-    try {
-        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
-        
-        if (activeRoom === 'tyla') {
-            query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
-        } else {
-            query = query.eq('room_id', activeRoom);
-        }
+        async function fetchData(forceScroll = false) {
+            try {
+                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(currentLimit);
+                
+                if (activeRoom === 'tyla') {
+                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
+                } else {
+                    query = query.eq('room_id', activeRoom);
+                }
 
-        const { data, error } = await query;
-        if (error) {
-            console.log("Supabase query error:", error);
-            return;
-        }
-        
-        // --- THE FIX: Guard against null or empty database states ---
-        if (!data || !Array.isArray(data) || data.length === 0) {
-            hasMoreMessages = false;
-            return; 
-        }
+                const { data, error } = await query;
+                if (error) {
+                    console.log("Supabase query error:", error);
+                    return;
+                }
+                
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    hasMoreMessages = false;
+                    return; 
+                }
 
-        hasMoreMessages = data.length === currentLimit;
-        const currentFp = JSON.stringify(data.map(m => m.id));
+                hasMoreMessages = data.length === currentLimit;
+                const currentFp = JSON.stringify(data.map(m => m.id));
 
-        if (lastFp !== "" && currentFp !== lastFp) {
-            const latest = data[0];
-            const me = localStorage.getItem('savedName') || "";
-            if (latest.username !== me) {
-                unread++;
-                if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
+                if (lastFp !== "" && currentFp !== lastFp) {
+                    const latest = data[0];
+                    const me = localStorage.getItem('savedName') || "";
+                    if (latest.username !== me) {
+                        unread++;
+                        if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
+                    }
+                }
+
+                if (currentFp === lastFp && !forceScroll) return;
+                lastFp = currentFp;
+                localStorage.setItem('cache_' + activeRoom, JSON.stringify(data));
+                renderMessages(data, forceScroll);
+            } catch (e) {
+                console.log("Fetch failed, will retry...", e);
             }
         }
-
-        if (currentFp === lastFp && !forceScroll) return;
-        lastFp = currentFp;
-        localStorage.setItem('cache_' + activeRoom, JSON.stringify(data));
-        renderMessages(data, forceScroll);
-    } catch (e) {
-        console.log("Fetch failed, will retry...", e);
-    }
-}
 
         function loadPrevious() {
             currentLimit += 40; 
@@ -295,7 +300,6 @@
             }
         }
 
-        // --- VOICE NOTE ENGINE ---
         async function toggleRecording() {
             const btn = document.getElementById('voice-btn');
             const txtInput = document.getElementById('content');
@@ -312,17 +316,12 @@
 
                     mediaRecorder.onstop = async () => {
                         const audioBlob = new Blob(audioChunks, { type: 'audio/mp3' });
-                        
-                        // Local audio component setup for preview player
                         const audioUrl = URL.createObjectURL(audioBlob);
                         previewPlayer.src = audioUrl;
 
-                        // Transform file track streams into database base64 payload strings
                         const reader = new FileReader();
                         reader.onloadend = () => {
                             stagedAudioBase64 = reader.result;
-                            
-                            // Swap layouts: Hide text bar, display native player preview
                             txtInput.style.display = 'none';
                             previewContainer.style.display = 'flex';
                         };
@@ -377,10 +376,9 @@
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
             
-            // Check if there is an audio note waiting in the wings
             if (stagedAudioBase64) {
                 const audioPayload = stagedAudioBase64;
-                cancelAudioDraft(); // Clean visual structures immediately for interface speeds
+                cancelAudioDraft(); 
                 await client.from('messages').insert([{ 
                     username: u, 
                     content: "🎙️ Sent a voice note", 
@@ -391,7 +389,6 @@
                 return;
             }
 
-            // Otherwise, default back to normal text transmission
             const c = document.getElementById('content').value;
             if (!c.trim()) return;
             document.getElementById('content').value = '';
