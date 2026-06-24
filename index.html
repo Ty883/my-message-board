@@ -139,9 +139,9 @@
     </footer>
 
    <script>
-        // --- UPDATED CONFIGURATION WITH YOUR NEW PROJECT CREDENTIALS ---
+        // --- SWAPPED BACK TO ORIGINAL CREDENTIALS ---
         const SB_URL = 'https://lsfsefkdjzjskijeswxi.supabase.co'; 
-        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxzZnNlZmtkanpqc2tpamVzd3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE1NTI5NDUsImV4cCI6MjA5NzEyODk0NX0.d5U03WkN_RSqfSudLatfcEc_Gz0w9M3Y4ltNCgjImuA'; 
+        const SB_KEY = 'sb_publishable_tUIQ_UoSRx8XlqIxzd8sxg_I7M5CWFx'; 
         const client = supabase.createClient(SB_URL, SB_KEY);
 
         let lastFp = "";
@@ -378,10 +378,9 @@
             }
         });
 
-        // --- UPDATED FIXED SEND FUNCTION ---
         async function handleSend() {
             const u = document.getElementById('username').value || "Anon";
-            const currentRoom = document.getElementById('room-select').value; // Dynamically grab active target room
+            const currentRoom = document.getElementById('room-select').value;
             
             if (stagedAudioBase64) {
                 const audioPayload = stagedAudioBase64;
