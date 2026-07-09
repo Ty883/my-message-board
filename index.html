@@ -238,7 +238,7 @@
                 }
 
                 if (forceScroll) {
-                    hasMoreMessages = data.length >= currentLimit;
+                    hasMoreMessages = data.length >= 0;
                 }
                 
                 const newestMessageId = data[0].id;
@@ -260,10 +260,15 @@
             }
         }
 
-        function loadPrevious() {
-            currentLimit += 40; 
-            fetchData(true);
-        }
+       function loadPrevious() {
+    // If we started on a lightweight 5-message bypass, step up to a standard chunk size
+    if (currentLimit === 5) {
+        currentLimit = 40;
+    } else {
+        currentLimit += 40; 
+    }
+    fetchData(true); // Pass true to force a full history render pass
+}
 
         function renderMessages(data, forceScroll) {
             const container = document.getElementById('messages');
