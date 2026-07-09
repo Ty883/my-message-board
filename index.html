@@ -209,7 +209,7 @@
     try {
         const currentSelection = document.getElementById('room-select').value;
         
-        // Background check only pulls 1 item, initial/manual loads pull full currentLimit
+        // Background check pulls 1 item, initial/manual loads pull full history limit
         const fetchLimit = forceScroll ? currentLimit : 1;
         let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
         
@@ -228,29 +228,29 @@
         if (!data || !Array.isArray(data) || data.length === 0) {
             if (forceScroll) {
                 document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
-                lastFp = ""; // Clear fingerprint so old rooms don't bleed over
+                lastFp = ""; 
             }
             if (forceScroll) hasMoreMessages = false;
             return; 
         }
 
         if (forceScroll) {
-            hasMoreMessages = data.length === currentLimit;
+            // Keep the button visible if we hit the limit ceiling OR if there's substantial history
+            hasMoreMessages = data.length >= currentLimit;
         }
         
-        // Create a unique identifier for the newest message found
         const newestMessageId = data[0].id;
 
-        // If background polling detects a brand new message id that we haven't seen, refresh the UI
+        // If background polling detects a brand new message id, refresh the UI
         if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
             fetchData(true);
             return;
         }
 
-        // If background loop matches what we already see, stop immediately. Do not scroll!
+        // Background loop safe-exit: if it matches what we already see, stop and do not scroll
         if (!forceScroll) return;
 
-        // Save our visual marker (only updated on full render states)
+        // Save our visual marker and force the render to complete
         lastFp = newestMessageId;
         
         localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
@@ -260,10 +260,9 @@
         console.log("Fetch failed, will retry...", e);
     }
 }
-
         function loadPrevious() {
             currentLimit += 40; 
-            fetchData(false);
+            fetchData(true);
         }
 
         function renderMessages(data, forceScroll) {
