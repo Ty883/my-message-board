@@ -178,143 +178,141 @@
             localStorage.setItem('nightMode', isDark ? 'on' : 'off');
         }
 
-        function changeRoom() {
-            activeRoom = document.getElementById('room-select').value;
-            localStorage.setItem('currentRoom', activeRoom);
-            
-            lastFp = ""; 
-            cancelAudioDraft(); 
-
-            document.getElementById('messages').innerHTML = '';
-
-            const cached = localStorage.getItem('cache_' + activeRoom);
-            if (cached) {
-                currentLimit = 40; 
-                hasMoreMessages = true;
-                renderMessages(JSON.parse(cached), true);
-                fetchData(true); 
-            } else {
-                currentLimit = 5; 
-                hasMoreMessages = true;
-                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Opening room...</div>';
-                fetchData(true); 
-            }
+       async function fetchData(syncMode = 'live') {
+    // syncMode options: 
+    // 'live' (routine 3s background check for 1 new message)
+    // 'init' (first room load, clear view, snap to bottom)
+    // 'history' (loading older text chunks, preserve scroll position)
+    try {
+        const currentSelection = document.getElementById('room-select').value;
+        const fetchLimit = syncMode === 'live' ? 1 : currentLimit;
+        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
+        
+        if (currentSelection === 'tyla') {
+            query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
+        } else {
+            query = query.eq('room_id', currentSelection);
         }
 
-        function getUsernameColor(name) {
-            let hash = 0;
-            const str = name || "Anon";
-            for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-            return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
+        const { data, error } = await query;
+        if (error) {
+            console.log("Supabase error:", error);
+            return;
         }
 
-        async function fetchData(forceScroll = false) {
-            try {
-                const currentSelection = document.getElementById('room-select').value;
-                const fetchLimit = forceScroll ? currentLimit : 1;
-                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
-                
-                if (currentSelection === 'tyla') {
-                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
-                } else {
-                    query = query.eq('room_id', currentSelection);
-                }
-
-                const { data, error } = await query;
-                if (error) {
-                    console.log("Supabase query error:", error);
-                    return;
-                }
-
-                if (currentSelection !== document.getElementById('room-select').value) return;
-                
-                if (!data || !Array.isArray(data) || data.length === 0) {
-                    if (forceScroll) {
-                        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
-                        lastFp = ""; 
-                    }
-                    if (forceScroll) hasMoreMessages = false;
-                    return; 
-                }
-
-                if (forceScroll) {
-                    hasMoreMessages = data.length === currentLimit;
-                }
-                
-                const newestMessageId = data[0].id;
-
-                if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
-                    fetchData(true);
-                    return;
-                }
-
-                if (!forceScroll) return;
-
-                lastFp = newestMessageId;
-                
-                localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
-                renderMessages(data, forceScroll);
-                
-            } catch (e) {
-                console.log("Fetch failed, will retry...", e);
+        if (currentSelection !== document.getElementById('room-select').value) return;
+        
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            if (syncMode === 'init') {
+                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
+                lastFp = ""; 
             }
+            if (syncMode !== 'live') hasMoreMessages = false;
+            return; 
         }
 
-        function loadPrevious() {
-            if (currentLimit === 5) {
-                currentLimit = 20;
-            } else {
-                currentLimit += 15;
-            }
-            fetchData(false); 
+        // Keep button active if we received exactly the amount requested
+        if (syncMode !== 'live') {
+            hasMoreMessages = data.length === currentLimit;
+        }
+        
+        const newestMessageId = data[0].id;
+
+        // If background sync spots a new message ID, trigger a full interface refresh
+        if (syncMode === 'live' && lastFp !== "" && newestMessageId !== lastFp) {
+            fetchData('init');
+            return;
         }
 
-        function renderMessages(data, forceScroll) {
-            const container = document.getElementById('messages');
-            const oldScrollHeight = container.scrollHeight;
-            const oldScrollTop = container.scrollTop;
+        if (syncMode === 'live') return;
 
-            container.innerHTML = '';
+        lastFp = newestMessageId;
+        
+        localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
+        renderMessages(data, syncMode);
+        
+    } catch (e) {
+        console.log("Sync failed:", e);
+    }
+}
 
-            if (hasMoreMessages) {
-                const btnDiv = document.createElement('div');
-                btnDiv.className = 'load-more-container';
-                btnDiv.innerHTML = `<button class="btn-load-more" onclick="loadPrevious()">Load Previous Messages</button>`;
-                container.appendChild(btnDiv);
-            }
+function loadPrevious() {
+    if (currentLimit === 5) {
+        currentLimit = 20;
+    } else {
+        currentLimit += 15;
+    }
+    fetchData('history'); // Correctly handles history math
+}
 
-            [...data].reverse().forEach(m => {
-                const isMe = m.username === (localStorage.getItem('savedName') || "");
-                const color = getUsernameColor(m.username);
-                const div = document.createElement('div');
-                div.className = `message-row ${isMe ? 'me' : ''}`;
-                
-                let specialContent = "";
-                if (m.image_data) {
-                    specialContent = `<img src="${m.image_data}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;">`;
-                } else if (m.audio_data) {
-                    specialContent = `<audio src="${m.audio_data}" controls controlsList="nodownload"></audio>`;
-                }
+function changeRoom() {
+    activeRoom = document.getElementById('room-select').value;
+    localStorage.setItem('currentRoom', activeRoom);
+    
+    lastFp = ""; 
+    cancelAudioDraft(); 
+    document.getElementById('messages').innerHTML = '';
 
-                div.innerHTML = `
-                    <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
-                        <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:4px; gap: 15px;">
-                            <b style="color:${color}">${m.username || 'Anon'}</b>
-                            <span style="color:var(--time)">${new Date(m.created_at).toLocaleDateString([], {month:'short', day:'numeric'})}, ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                        </div>
-                        <div style="word-break: break-word;">${m.content || ''}</div>
-                        ${specialContent}
-                    </div>
-                `;
-                container.appendChild(div);
-            });
+    const cached = localStorage.getItem('cache_' + activeRoom);
+    if (cached) {
+        currentLimit = 40; 
+        hasMoreMessages = true;
+        renderMessages(JSON.parse(cached), 'init');
+        fetchData('init'); 
+    } else {
+        currentLimit = 5; 
+        hasMoreMessages = true;
+        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Opening room...</div>';
+        fetchData('init'); 
+    }
+}
 
-            if (forceScroll) {
-                container.scrollTop = container.scrollHeight;
-            } else {
-                container.scrollTop = oldScrollTop + (container.scrollHeight - oldScrollHeight);
-            }
+       function renderMessages(data, syncMode) {
+    const container = document.getElementById('messages');
+    const oldScrollHeight = container.scrollHeight;
+    const oldScrollTop = container.scrollTop;
+
+    container.innerHTML = '';
+
+    if (hasMoreMessages) {
+        const btnDiv = document.createElement('div');
+        btnDiv.className = 'load-more-container';
+        btnDiv.innerHTML = `<button class="btn-load-more" onclick="loadPrevious()">Load Previous Messages</button>`;
+        container.appendChild(btnDiv);
+    }
+
+    [...data].reverse().forEach(m => {
+        const isMe = m.username === (localStorage.getItem('savedName') || "");
+        const color = getUsernameColor(m.username);
+        const div = document.createElement('div');
+        div.className = `message-row ${isMe ? 'me' : ''}`;
+        
+        let specialContent = "";
+        if (m.image_data) {
+            specialContent = `<img src="${m.image_data}" style="max-width:100%; border-radius:8px; margin-top:8px; display:block;">`;
+        } else if (m.audio_data) {
+            specialContent = `<audio src="${m.audio_data}" controls controlsList="nodownload"></audio>`;
         }
+
+        div.innerHTML = `
+            <div class="msg" style="border-left: 5px solid ${isMe ? 'transparent' : color}">
+                <div style="display:flex; justify-content:space-between; font-size:0.7rem; margin-bottom:4px; gap: 15px;">
+                    <b style="color:${color}">${m.username || 'Anon'}</b>
+                    <span style="color:var(--time)">${new Date(m.created_at).toLocaleDateString([], {month:'short', day:'numeric'})}, ${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
+                </div>
+                <div style="word-break: break-word;">${m.content || ''}</div>
+                ${specialContent}
+            </div>
+        `;
+        container.appendChild(div);
+    });
+
+    if (syncMode === 'init') {
+        container.scrollTop = container.scrollHeight;
+    } else {
+        container.scrollTop = oldScrollTop + (container.scrollHeight - oldScrollHeight);
+    }
+}
 
         async function toggleRecording() {
             const btn = document.getElementById('voice-btn');
@@ -458,7 +456,7 @@
         const initCache = localStorage.getItem('cache_' + activeRoom);
         if (initCache) renderMessages(JSON.parse(initCache), true);
         
-        fetchData(true);
+        fetchData('init');
         startSync(); 
     </script>
 </body>
