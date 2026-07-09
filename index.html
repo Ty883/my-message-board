@@ -138,11 +138,11 @@
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
-   <script>
-        // --- SWAPPED BACK TO ORIGINAL CREDENTIALS ---
-       const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
-    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdGtxeHliZ2xkaHh6Z3FyYnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTY5NTcsImV4cCI6MjA4OTY5Mjk1N30.ZkevB6e66Ypfzfv75KSpbY33i11VPfVNoNcV3Rv3ooY'; 
-    const client = supabase.createClient(SB_URL, SB_KEY);
+  <script>
+        // --- CREDENTIALS ---
+        const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
+        const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdGtxeHliZ2xkaHh6Z3FyYnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTY5NTcsImV4cCI6MjA4OTY5Mjk1N30.ZkevB6e66Ypfzfv75KSpbY33i11VPfVNoNcV3Rv3ooY'; 
+        const client = supabase.createClient(SB_URL, SB_KEY);
 
         let lastFp = "";
         let unread = 0;
@@ -178,26 +178,25 @@
             localStorage.setItem('nightMode', isDark ? 'on' : 'off');
         }
 
-       function changeRoom() {
-    activeRoom = document.getElementById('room-select').value;
-    localStorage.setItem('currentRoom', activeRoom);
-    
-    // CRITICAL FIX: Reset these completely so the old room's data doesn't trigger a refresh loop
-    lastFp = ""; 
-    currentLimit = 40; 
-    hasMoreMessages = true;
-    cancelAudioDraft(); 
+        function changeRoom() {
+            activeRoom = document.getElementById('room-select').value;
+            localStorage.setItem('currentRoom', activeRoom);
+            
+            lastFp = ""; 
+            currentLimit = 40; 
+            hasMoreMessages = true;
+            cancelAudioDraft(); 
 
-    document.getElementById('messages').innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
 
-    const cached = localStorage.getItem('cache_' + activeRoom);
-    if (cached) {
-        renderMessages(JSON.parse(cached), true);
-    } else {
-        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
-    }
-    fetchData(true); 
-}
+            const cached = localStorage.getItem('cache_' + activeRoom);
+            if (cached) {
+                renderMessages(JSON.parse(cached), true);
+            } else {
+                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
+            }
+            fetchData(true); 
+        }
 
         function getUsernameColor(name) {
             let hash = 0;
@@ -206,64 +205,58 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
-    async function fetchData(forceScroll = false) {
-    try {
-        const currentSelection = document.getElementById('room-select').value;
-        
-        // Background check pulls 1 item, initial loads pull full history limit
-        const fetchLimit = forceScroll ? currentLimit : 1;
-        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
-        
-        if (currentSelection === 'tyla') {
-            query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
-        } else {
-            query = query.eq('room_id', currentSelection);
-        }
+        async function fetchData(forceScroll = false) {
+            try {
+                const currentSelection = document.getElementById('room-select').value;
+                const fetchLimit = forceScroll ? currentLimit : 1;
+                let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
+                
+                if (currentSelection === 'tyla') {
+                    query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
+                } else {
+                    query = query.eq('room_id', currentSelection);
+                }
 
-        const { data, error } = await query;
-        if (error) {
-            console.log("Supabase query error:", error);
-            return;
-        }
+                const { data, error } = await query;
+                if (error) {
+                    console.log("Supabase query error:", error);
+                    return;
+                }
 
-        // Safety check: If the user changed rooms while this network call was running, drop the data
-        if (currentSelection !== document.getElementById('room-select').value) return;
-        
-        if (!data || !Array.isArray(data) || data.length === 0) {
-            if (forceScroll) {
-                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
-                lastFp = ""; 
+                if (currentSelection !== document.getElementById('room-select').value) return;
+                
+                if (!data || !Array.isArray(data) || data.length === 0) {
+                    if (forceScroll) {
+                        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
+                        lastFp = ""; 
+                    }
+                    if (forceScroll) hasMoreMessages = false;
+                    return; 
+                }
+
+                if (forceScroll) {
+                    hasMoreMessages = data.length >= currentLimit;
+                }
+                
+                const newestMessageId = data[0].id;
+
+                if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
+                    fetchData(true);
+                    return;
+                }
+
+                if (!forceScroll) return;
+
+                lastFp = newestMessageId;
+                
+                localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
+                renderMessages(data, forceScroll);
+                
+            } catch (e) {
+                console.log("Fetch failed, will retry...", e);
             }
-            if (forceScroll) hasMoreMessages = false;
-            return; 
         }
 
-        if (forceScroll) {
-            hasMoreMessages = data.length >= currentLimit;
-        }
-        
-        const newestMessageId = data[0].id;
-
-        // If background polling detects an actual new message ID, trigger a full re-fetch
-        if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
-            fetchData(true);
-            return;
-        }
-
-        // Background loop safe-exit: if nothing changed, stop immediately and don't touch the scroll
-        if (!forceScroll) return;
-
-        // Save our visual marker
-        lastFp = newestMessageId;
-        
-        localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
-        renderMessages(data, forceScroll);
-        
-    } catch (e) {
-        console.log("Fetch failed, will retry...", e);
-    }
-}
-}
         function loadPrevious() {
             currentLimit += 40; 
             fetchData(true);
@@ -414,7 +407,6 @@
             const { error } = await client.from('messages').insert([{ username: u, content: c, room_id: currentRoom }]);
             if (error) {
                 console.error("Message insert error:", error.message);
-                alert("Database blocked message. Did you disable RLS in your table settings?");
             }
             fetchData(true);
         }
