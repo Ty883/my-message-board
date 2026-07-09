@@ -205,14 +205,13 @@
             return `hsl(${Math.abs(hash) % 360}, 75%, 50%)`;
         }
 
-      async function fetchData(forceScroll = false) {
+    async function fetchData(forceScroll = false) {
     try {
-        // Optimization: If it's just a background sync check, only request 1 row to prevent lag
-        const fetchLimit = forceScroll ? currentLimit : 1;
-        
-        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
-        
         const currentSelection = document.getElementById('room-select').value;
+        
+        // Background check only pulls 1 item, initial/manual loads pull full currentLimit
+        const fetchLimit = forceScroll ? currentLimit : 1;
+        let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
         
         if (currentSelection === 'tyla') {
             query = query.or(`room_id.eq.tyla,room_id.eq.general,room_id.is.null,room_id.eq.anna,room_id.eq.luke`);
@@ -229,42 +228,34 @@
         if (!data || !Array.isArray(data) || data.length === 0) {
             if (forceScroll) {
                 document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">No messages here yet.</div>';
+                lastFp = ""; // Clear fingerprint so old rooms don't bleed over
             }
-            // Only update button tracking during full history loads
             if (forceScroll) hasMoreMessages = false;
             return; 
         }
 
-        // Only modify the "Load Previous" button state during a full load request
         if (forceScroll) {
             hasMoreMessages = data.length === currentLimit;
         }
         
-        const currentFp = JSON.stringify(data.map(m => m.id));
+        // Create a unique identifier for the newest message found
+        const newestMessageId = data[0].id;
 
-        if (lastFp !== "" && currentFp !== lastFp) {
-            const latest = data[0];
-            const me = localStorage.getItem('savedName') || "";
-            if (latest.username !== me) {
-                unread++;
-                if (navigator.setAppBadge) navigator.setAppBadge(unread).catch(() => {});
-            }
-        }
-
-        if (currentFp === lastFp && !forceScroll) return;
-        
-        // If background sync detects a new message, trigger a full re-render
-        if (!forceScroll && currentFp !== lastFp && lastFp !== "") {
+        // If background polling detects a brand new message id that we haven't seen, refresh the UI
+        if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
             fetchData(true);
             return;
         }
 
-        lastFp = currentFp;
+        // If background loop matches what we already see, stop immediately. Do not scroll!
+        if (!forceScroll) return;
+
+        // Save our visual marker (only updated on full render states)
+        lastFp = newestMessageId;
         
-        if (forceScroll) {
-            localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
-            renderMessages(data, forceScroll);
-        }
+        localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
+        renderMessages(data, forceScroll);
+        
     } catch (e) {
         console.log("Fetch failed, will retry...", e);
     }
