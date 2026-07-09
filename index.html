@@ -178,25 +178,26 @@
             localStorage.setItem('nightMode', isDark ? 'on' : 'off');
         }
 
-        function changeRoom() {
-            activeRoom = document.getElementById('room-select').value;
-            localStorage.setItem('currentRoom', activeRoom);
-            
-            lastFp = ""; 
-            currentLimit = 40; 
-            hasMoreMessages = true;
-            cancelAudioDraft(); 
+       function changeRoom() {
+    activeRoom = document.getElementById('room-select').value;
+    localStorage.setItem('currentRoom', activeRoom);
+    
+    // CRITICAL FIX: Reset these completely so the old room's data doesn't trigger a refresh loop
+    lastFp = ""; 
+    currentLimit = 40; 
+    hasMoreMessages = true;
+    cancelAudioDraft(); 
 
-            document.getElementById('messages').innerHTML = '';
+    document.getElementById('messages').innerHTML = '';
 
-            const cached = localStorage.getItem('cache_' + activeRoom);
-            if (cached) {
-                renderMessages(JSON.parse(cached), true);
-            } else {
-                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
-            }
-            fetchData(true); 
-        }
+    const cached = localStorage.getItem('cache_' + activeRoom);
+    if (cached) {
+        renderMessages(JSON.parse(cached), true);
+    } else {
+        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
+    }
+    fetchData(true); 
+}
 
         function getUsernameColor(name) {
             let hash = 0;
@@ -209,7 +210,7 @@
     try {
         const currentSelection = document.getElementById('room-select').value;
         
-        // Background check pulls 1 item, initial/manual loads pull full history limit
+        // Background check pulls 1 item, initial loads pull full history limit
         const fetchLimit = forceScroll ? currentLimit : 1;
         let query = client.from('messages').select('*').order('created_at', { ascending: false }).limit(fetchLimit);
         
@@ -224,6 +225,9 @@
             console.log("Supabase query error:", error);
             return;
         }
+
+        // Safety check: If the user changed rooms while this network call was running, drop the data
+        if (currentSelection !== document.getElementById('room-select').value) return;
         
         if (!data || !Array.isArray(data) || data.length === 0) {
             if (forceScroll) {
@@ -235,22 +239,21 @@
         }
 
         if (forceScroll) {
-            // Keep the button visible if we hit the limit ceiling OR if there's substantial history
             hasMoreMessages = data.length >= currentLimit;
         }
         
         const newestMessageId = data[0].id;
 
-        // If background polling detects a brand new message id, refresh the UI
+        // If background polling detects an actual new message ID, trigger a full re-fetch
         if (!forceScroll && lastFp !== "" && newestMessageId !== lastFp) {
             fetchData(true);
             return;
         }
 
-        // Background loop safe-exit: if it matches what we already see, stop and do not scroll
+        // Background loop safe-exit: if nothing changed, stop immediately and don't touch the scroll
         if (!forceScroll) return;
 
-        // Save our visual marker and force the render to complete
+        // Save our visual marker
         lastFp = newestMessageId;
         
         localStorage.setItem('cache_' + currentSelection, JSON.stringify(data));
@@ -259,6 +262,7 @@
     } catch (e) {
         console.log("Fetch failed, will retry...", e);
     }
+}
 }
         function loadPrevious() {
             currentLimit += 40; 
