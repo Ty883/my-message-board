@@ -138,7 +138,7 @@
         <button class="btn-send" onclick="handleSend()">Send</button>
     </footer>
 
-  <script>
+    <script>
         // --- CREDENTIALS ---
         const SB_URL = 'https://iatkqxybgldhxzgqrbxq.supabase.co'; 
         const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlhdGtxeHliZ2xkaHh6Z3FyYnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTY5NTcsImV4cCI6MjA4OTY5Mjk1N30.ZkevB6e66Ypfzfv75KSpbY33i11VPfVNoNcV3Rv3ooY'; 
@@ -179,28 +179,28 @@
         }
 
         function changeRoom() {
-    activeRoom = document.getElementById('room-select').value;
-    localStorage.setItem('currentRoom', activeRoom);
-    
-    lastFp = ""; 
-    cancelAudioDraft(); 
+            activeRoom = document.getElementById('room-select').value;
+            localStorage.setItem('currentRoom', activeRoom);
+            
+            lastFp = ""; 
+            cancelAudioDraft(); 
 
-    document.getElementById('messages').innerHTML = '';
+            document.getElementById('messages').innerHTML = '';
 
-    const cached = localStorage.getItem('cache_' + activeRoom);
-    if (cached) {
-        currentLimit = 40; // If we have a cache, load the normal history limit
-        hasMoreMessages = true;
-        renderMessages(JSON.parse(cached), true);
-        fetchData(true); 
-    } else {
-        // CRITICAL QUOTA BYPASS: If no cache exists, only request 5 messages so the API doesn't choke
-        currentLimit = 5; 
-        hasMoreMessages = true;
-        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Opening room...</div>';
-        fetchData(true); 
-    }
-}
+            const cached = localStorage.getItem('cache_' + activeRoom);
+            if (cached) {
+                currentLimit = 40; 
+                hasMoreMessages = true;
+                renderMessages(JSON.parse(cached), true);
+                fetchData(true); 
+            } else {
+                currentLimit = 5; 
+                hasMoreMessages = true;
+                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Opening room...</div>';
+                fetchData(true); 
+            }
+        }
+
         function getUsernameColor(name) {
             let hash = 0;
             const str = name || "Anon";
@@ -238,7 +238,7 @@
                 }
 
                 if (forceScroll) {
-                    hasMoreMessages = data.length >= 0;
+                    hasMoreMessages = data.length === currentLimit;
                 }
                 
                 const newestMessageId = data[0].id;
@@ -260,15 +260,14 @@
             }
         }
 
-       function loadPrevious() {
-    // If we started on a lightweight 5-message bypass, step up to a standard chunk size
-    if (currentLimit === 5) {
-        currentLimit = 40;
-    } else {
-        currentLimit += 40; 
-    }
-    fetchData(true); // Pass true to force a full history render pass
-}
+        function loadPrevious() {
+            if (currentLimit === 5) {
+                currentLimit = 20;
+            } else {
+                currentLimit += 15;
+            }
+            fetchData(false); 
+        }
 
         function renderMessages(data, forceScroll) {
             const container = document.getElementById('messages');
