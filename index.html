@@ -179,25 +179,28 @@
         }
 
         function changeRoom() {
-            activeRoom = document.getElementById('room-select').value;
-            localStorage.setItem('currentRoom', activeRoom);
-            
-            lastFp = ""; 
-            currentLimit = 40; 
-            hasMoreMessages = true;
-            cancelAudioDraft(); 
+    activeRoom = document.getElementById('room-select').value;
+    localStorage.setItem('currentRoom', activeRoom);
+    
+    lastFp = ""; 
+    cancelAudioDraft(); 
 
-            document.getElementById('messages').innerHTML = '';
+    document.getElementById('messages').innerHTML = '';
 
-            const cached = localStorage.getItem('cache_' + activeRoom);
-            if (cached) {
-                renderMessages(JSON.parse(cached), true);
-            } else {
-                document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Loading chat...</div>';
-            }
-            fetchData(true); 
-        }
-
+    const cached = localStorage.getItem('cache_' + activeRoom);
+    if (cached) {
+        currentLimit = 40; // If we have a cache, load the normal history limit
+        hasMoreMessages = true;
+        renderMessages(JSON.parse(cached), true);
+        fetchData(true); 
+    } else {
+        // CRITICAL QUOTA BYPASS: If no cache exists, only request 5 messages so the API doesn't choke
+        currentLimit = 5; 
+        hasMoreMessages = true;
+        document.getElementById('messages').innerHTML = '<div style="text-align:center; padding:20px; color:var(--time);">Opening room...</div>';
+        fetchData(true); 
+    }
+}
         function getUsernameColor(name) {
             let hash = 0;
             const str = name || "Anon";
